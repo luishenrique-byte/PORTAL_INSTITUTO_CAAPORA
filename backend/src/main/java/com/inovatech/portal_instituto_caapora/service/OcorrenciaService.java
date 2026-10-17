@@ -9,16 +9,19 @@ import com.inovatech.portal_instituto_caapora.database.models.ENUM.SaudeStatus;
 import com.inovatech.portal_instituto_caapora.database.models.EquipeEntity;
 import com.inovatech.portal_instituto_caapora.database.models.FuncionarioEntity;
 import com.inovatech.portal_instituto_caapora.database.models.HistoricoOcorrenciaEntity;
+import com.inovatech.portal_instituto_caapora.database.models.HistoricoUrgenciaEntity;
 import com.inovatech.portal_instituto_caapora.database.models.OcorrenciaEntity;
 import com.inovatech.portal_instituto_caapora.database.models.ReportanteEntity;
 import com.inovatech.portal_instituto_caapora.database.repository.AnimalRepository;
 import com.inovatech.portal_instituto_caapora.database.repository.EquipeRepository;
 import com.inovatech.portal_instituto_caapora.database.repository.HistoricoOcorrenciaRepository;
+import com.inovatech.portal_instituto_caapora.database.repository.HistoricoUrgenciaRepository;
 import com.inovatech.portal_instituto_caapora.database.repository.OcorrenciaRepository;
 import com.inovatech.portal_instituto_caapora.database.repository.ReportanteRepository;
 import com.inovatech.portal_instituto_caapora.dto.request.AtualizarStatusRequestDTO;
 import com.inovatech.portal_instituto_caapora.dto.request.OcorrenciaRequestDTO;
 import com.inovatech.portal_instituto_caapora.dto.response.HistoricoOcorrenciaResponseDTO;
+import com.inovatech.portal_instituto_caapora.dto.response.HistoricoUrgenciaResponseDTO;
 import com.inovatech.portal_instituto_caapora.dto.response.OcorrenciaResponseDTO;
 import com.inovatech.portal_instituto_caapora.dto.response.RastreioOcorrenciaResponseDTO;
 import com.inovatech.portal_instituto_caapora.exception.RecursoNaoEncontradoException;
@@ -49,6 +52,7 @@ public class OcorrenciaService {
 
     private final OcorrenciaRepository ocorrenciaRepository;
     private final HistoricoOcorrenciaRepository historicoRepository;
+    private final HistoricoUrgenciaRepository historicoUrgenciaRepository;
     private final AnimalRepository animalRepository;
     private final ReportanteRepository reportanteRepository;
     private final EquipeRepository equipeRepository;
@@ -233,7 +237,8 @@ public class OcorrenciaService {
         return OcorrenciaResponseDTO.fromEntity(ocorrencia);
     }
 
-    // A central reclassifica o nível de risco (RF10, US 7.2.2)
+    // A central reclassifica o nível de risco (RF10, US 7.2.2).
+    // Toda alteração fica registrada com data, hora e responsável (US 7.2.2, critério 2).
     @Transactional
     public OcorrenciaResponseDTO alterarUrgencia(Long ocorrenciaId, GrauUrgencia urgencia, Long funcionarioId) {
         if (urgencia == null) {
@@ -241,10 +246,33 @@ public class OcorrenciaService {
         }
         OcorrenciaEntity ocorrencia = buscarEntidade(ocorrenciaId);
         garantirNaoConcluida(ocorrencia);
-        funcionarioService.buscarAtivo(funcionarioId);
+        FuncionarioEntity responsavel = funcionarioService.buscarAtivo(funcionarioId);
 
+        GrauUrgencia anterior = ocorrencia.getGrauUrgencia();
+        if (anterior == urgencia) {
+            return OcorrenciaResponseDTO.fromEntity(ocorrencia);
+        }
         ocorrencia.setGrauUrgencia(urgencia);
-        return OcorrenciaResponseDTO.fromEntity(ocorrenciaRepository.save(ocorrencia));
+        ocorrencia = ocorrenciaRepository.save(ocorrencia);
+
+        historicoUrgenciaRepository.save(HistoricoUrgenciaEntity.builder()
+                .ocorrencia(ocorrencia)
+                .responsavel(responsavel)
+                .urgenciaAnterior(anterior)
+                .urgenciaNova(urgencia)
+                .dataHora(LocalDateTime.now())
+                .build());
+
+        return OcorrenciaResponseDTO.fromEntity(ocorrencia);
+    }
+
+    // Auditoria das reclassificações de urgência, em ordem cronológica (US 7.2.2, US 7.4.4)
+    @Transactional(readOnly = true)
+    public List<HistoricoUrgenciaResponseDTO> listarHistoricoUrgencia(Long ocorrenciaId) {
+        buscarEntidade(ocorrenciaId);
+        return historicoUrgenciaRepository.findByOcorrenciaIdOrderByDataHoraAsc(ocorrenciaId).stream()
+                .map(HistoricoUrgenciaResponseDTO::fromEntity)
+                .toList();
     }
 
     // Vincula ou troca a equipe responsável (RF13, US 7.2.3).
