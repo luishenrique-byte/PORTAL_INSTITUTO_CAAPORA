@@ -9,10 +9,12 @@ import com.inovatech.portal_instituto_caapora.database.models.ENUM.SaudeStatus;
 import com.inovatech.portal_instituto_caapora.database.models.EquipeEntity;
 import com.inovatech.portal_instituto_caapora.database.models.FuncionarioEntity;
 import com.inovatech.portal_instituto_caapora.database.models.HistoricoOcorrenciaEntity;
+import com.inovatech.portal_instituto_caapora.database.models.HistoricoUrgenciaEntity;
 import com.inovatech.portal_instituto_caapora.database.models.OcorrenciaEntity;
 import com.inovatech.portal_instituto_caapora.database.repository.AnimalRepository;
 import com.inovatech.portal_instituto_caapora.database.repository.EquipeRepository;
 import com.inovatech.portal_instituto_caapora.database.repository.HistoricoOcorrenciaRepository;
+import com.inovatech.portal_instituto_caapora.database.repository.HistoricoUrgenciaRepository;
 import com.inovatech.portal_instituto_caapora.database.repository.OcorrenciaRepository;
 import com.inovatech.portal_instituto_caapora.database.repository.ReportanteRepository;
 import com.inovatech.portal_instituto_caapora.dto.request.AnimalRequestDTO;
@@ -37,6 +39,7 @@ import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
@@ -51,6 +54,7 @@ class OcorrenciaServiceTest {
 
     @Mock OcorrenciaRepository ocorrenciaRepository;
     @Mock HistoricoOcorrenciaRepository historicoRepository;
+    @Mock HistoricoUrgenciaRepository historicoUrgenciaRepository;
     @Mock AnimalRepository animalRepository;
     @Mock ReportanteRepository reportanteRepository;
     @Mock EquipeRepository equipeRepository;
@@ -159,6 +163,32 @@ class OcorrenciaServiceTest {
         when(ocorrenciaRepository.findById(10L)).thenReturn(Optional.of(o));
 
         assertThrows(RegraNegocioException.class, () -> service.alterarUrgencia(10L, GrauUrgencia.BAIXA, 1L));
+    }
+
+    @Test
+    void alteracaoDeUrgenciaFicaRegistradaComDataHoraEResponsavel() {
+        OcorrenciaEntity o = ocorrencia(10L, OcorrenciaStatus.TRIAGEM, GrauUrgencia.MEDIA, LocalDateTime.now());
+        when(ocorrenciaRepository.findById(10L)).thenReturn(Optional.of(o));
+
+        service.alterarUrgencia(10L, GrauUrgencia.CRITICA, 1L);
+
+        assertEquals(GrauUrgencia.CRITICA, o.getGrauUrgencia());
+        ArgumentCaptor<HistoricoUrgenciaEntity> registro = ArgumentCaptor.forClass(HistoricoUrgenciaEntity.class);
+        verify(historicoUrgenciaRepository).save(registro.capture());
+        assertEquals(GrauUrgencia.MEDIA, registro.getValue().getUrgenciaAnterior());
+        assertEquals(GrauUrgencia.CRITICA, registro.getValue().getUrgenciaNova());
+        assertEquals(atendente, registro.getValue().getResponsavel());
+        assertNotNull(registro.getValue().getDataHora());
+    }
+
+    @Test
+    void urgenciaIgualNaoGeraRegistro() {
+        OcorrenciaEntity o = ocorrencia(10L, OcorrenciaStatus.TRIAGEM, GrauUrgencia.ALTA, LocalDateTime.now());
+        when(ocorrenciaRepository.findById(10L)).thenReturn(Optional.of(o));
+
+        service.alterarUrgencia(10L, GrauUrgencia.ALTA, 1L);
+
+        verify(historicoUrgenciaRepository, never()).save(any());
     }
 
     @Test
