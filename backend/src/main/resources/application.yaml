@@ -4,7 +4,7 @@ spring:
   datasource:
     url: jdbc:postgresql://localhost:5432/dbInstituto_Caapora
     username: ${DATABASE_USERNAME:postgres} #Variavel de Ambiente
-    password: ${DATABASE_PASSWORD:postgres} #Variavel de Ambiente
+    password: ${DATABASE_PASSWORD:12345} #Variavel de Ambiente
   jpa:
     hibernate:
       ddl-auto: create-drop
@@ -13,3 +13,6 @@ spring:
       hibernate:
         format_sql: true
         dialect: org.hibernate.dialect.PostgreSQLDialect
+  jwt:
+    expiration: ${JWT_EXPIRATION:900000}
+    key: ${JWT_KEY:5P00Qvu+B0OFAKrDRikLhf46mhlwTz18UAF/E01tjYIY3m6U808DcJLkaSk6AOFQJMS7LdVLe2E5DeT8yyDCww==}
