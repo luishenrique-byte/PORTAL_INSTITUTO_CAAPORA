@@ -7,6 +7,7 @@ import jakarta.validation.constraints.NotNull;
 public record FuncionarioRequestDTO(
         @NotBlank String nome,
         @NotBlank @Email String email,
+        @NotBlank String senha,
         @NotNull Long perfilId,
         Long equipeId
 ) {

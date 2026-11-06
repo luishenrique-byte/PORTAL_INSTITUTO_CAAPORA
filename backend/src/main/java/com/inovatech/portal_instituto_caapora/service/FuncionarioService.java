@@ -7,6 +7,7 @@ import com.inovatech.portal_instituto_caapora.dto.response.FuncionarioResponseDT
 import com.inovatech.portal_instituto_caapora.exception.RecursoNaoEncontradoException;
 import com.inovatech.portal_instituto_caapora.exception.RegraNegocioException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -20,6 +21,7 @@ public class FuncionarioService {
     private final FuncionarioRepository funcionarioRepository;
     private final PerfilService perfilService;
     private final EquipeService equipeService;
+    private final PasswordEncoder passwordEncoder;
 
     @Transactional
     public FuncionarioResponseDTO criar(FuncionarioRequestDTO dto) {
@@ -29,6 +31,7 @@ public class FuncionarioService {
         FuncionarioEntity funcionario = FuncionarioEntity.builder()
                 .nome(dto.nome())
                 .email(dto.email())
+                .senha(passwordEncoder.encode(dto.senha()))
                 .perfil(perfilService.buscarEntidade(dto.perfilId()))
                 .equipe(dto.equipeId() != null ? equipeService.buscarEntidade(dto.equipeId()) : null)
                 .ativo(true)
