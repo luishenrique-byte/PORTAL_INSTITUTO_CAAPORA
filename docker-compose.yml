@@ -54,6 +54,9 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile
+      args:
+        # Endereço da API visto pelo navegador do usuário (não pelo container)
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:8080}
     ports:
       - "${WEB_PORT:-3000}:3000"
     depends_on:
