@@ -9,6 +9,8 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
+import org.springframework.web.multipart.support.MissingServletRequestPartException;
 
 import java.util.Map;
 
@@ -54,5 +56,19 @@ public class GlobalExceptionHandler {
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public Map<String, String> tratarTipoInvalido(MethodArgumentTypeMismatchException e) {
         return Map.of("erro", "Valor inválido para o parâmetro '" + e.getName() + "'");
+    }
+
+    // Arquivo maior que o limite de spring.servlet.multipart.max-file-size -> 413
+    @ExceptionHandler(MaxUploadSizeExceededException.class)
+    @ResponseStatus(HttpStatus.CONTENT_TOO_LARGE)
+    public Map<String, String> tratarArquivoGrande(MaxUploadSizeExceededException e) {
+        return Map.of("erro", "Arquivo maior que o limite permitido");
+    }
+
+    // Upload sem o campo "arquivo" -> 400
+    @ExceptionHandler(MissingServletRequestPartException.class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public Map<String, String> tratarArquivoAusente(MissingServletRequestPartException e) {
+        return Map.of("erro", "Campo '" + e.getRequestPartName() + "' é obrigatório");
     }
 }
