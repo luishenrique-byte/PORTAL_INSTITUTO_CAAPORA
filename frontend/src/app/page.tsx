@@ -84,13 +84,13 @@ function Nav() {
               {label}
             </a>
           ))}
-          <a
-            href={`mailto:${email}?subject=Acompanhar%20ocorr%C3%AAncia`}
+          <Link
+            href="/acompanhar"
             className="text-sm font-medium text-muted-foreground transition-colors hover:text-[#2d6a2f]"
             style={{ fontFamily: 'var(--font-body)' }}
           >
             Acompanhar
-          </a>
+          </Link>
         </nav>
         <RegisterLink className="hidden items-center gap-2 rounded-full bg-cta px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-[#a84016] md:inline-flex">
           Registrar Ocorrência
@@ -136,13 +136,13 @@ function Nav() {
               {label}
             </a>
           ))}
-          <a
-            href={`mailto:${email}?subject=Acompanhar%20ocorr%C3%AAncia`}
+          <Link
+            href="/acompanhar"
             onClick={() => setOpen(false)}
             className="rounded-full border border-border px-5 py-3 text-center text-sm font-medium text-[#1c2b1a]"
           >
             Acompanhar ocorrência
-          </a>
+          </Link>
           <RegisterLink className="rounded-full bg-cta py-3 text-center text-sm font-semibold text-white">
             Registrar Ocorrência
           </RegisterLink>

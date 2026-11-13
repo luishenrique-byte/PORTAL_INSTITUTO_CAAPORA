@@ -22,6 +22,8 @@ export type SaudeStatus =
 
 export type TipoMidia = 'TEXTO' | 'FOTO' | 'VIDEO' | 'AUDIO';
 
+export type OcorrenciaStatus = 'REGISTRADA' | 'TRIAGEM' | 'ATENDIMENTO' | 'RESGATE' | 'CONCLUIDO';
+
 export interface OcorrenciaPublicaRequest {
   latitude?: number | null;
   longitude?: number | null;
@@ -74,7 +76,8 @@ async function requisitar<T>(caminho: string, init: RequestInit): Promise<T> {
   let res: Response;
   try {
     res = await fetch(`${API_URL}${caminho}`, init);
-  } catch {
+  } catch (e) {
+    if (e instanceof DOMException && e.name === 'AbortError') throw e;
     throw new ApiError(
       'Sem conexão com o servidor. Verifique sua internet e tente novamente.',
       0,
@@ -82,6 +85,27 @@ async function requisitar<T>(caminho: string, init: RequestInit): Promise<T> {
   }
   if (!res.ok) throw await lerErro(res);
   return (await res.json()) as T;
+}
+
+// Visão pública da ocorrência (GET /ocorrencias/rastreio/{protocolo}).
+// Datas sem fuso (LocalDateTime do backend), ex.: "2026-09-22T09:14:00".
+export interface RastreioOcorrencia {
+  protocolo: string;
+  dataHoraRegistro: string;
+  ocorrenciaStatus: OcorrenciaStatus;
+  categoriaAnimal: CategoriaAnimal | null;
+  especie: string | null;
+  local: string | null; // endereço sem números
+  localPorGps: boolean;
+  equipe: string | null;
+  linhaDoTempo: { status: OcorrenciaStatus; dataHora: string }[];
+}
+
+export function rastrearOcorrencia(protocolo: string, signal?: AbortSignal) {
+  return requisitar<RastreioOcorrencia>(`/ocorrencias/rastreio/${encodeURIComponent(protocolo)}`, {
+    cache: 'no-store',
+    signal,
+  });
 }
 
 export function registrarOcorrenciaPublica(dados: OcorrenciaPublicaRequest) {

@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useState } from 'react';
 import { Check, Copy, Search, Smartphone, Timer, TriangleAlert } from 'lucide-react';
 import { toast } from 'sonner';
@@ -84,7 +85,12 @@ export function Sucesso({ resultado, onNova }: { resultado: ResultadoEnvio; onNo
           ))}
         </ul>
 
-        <Button type="button" variant="link" onClick={onNova} className="mt-5 underline">
+        <Button asChild variant="dark" className="mx-auto mt-6 flex h-12 w-full max-w-sm rounded-xl text-base font-semibold">
+          <Link href={`/acompanhar/${resultado.protocolo}`}>
+            <Search /> Acompanhar ocorrência
+          </Link>
+        </Button>
+        <Button type="button" variant="link" onClick={onNova} className="mt-3 underline">
           Registrar outra ocorrência
         </Button>
       </div>

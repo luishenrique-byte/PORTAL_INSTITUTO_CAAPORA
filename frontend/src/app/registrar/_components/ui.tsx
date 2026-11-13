@@ -1,8 +1,7 @@
 'use client';
 
-import Image from 'next/image';
-import Link from 'next/link';
-import { Check, ChevronLeft, TriangleAlert } from 'lucide-react';
+import { Check, TriangleAlert } from 'lucide-react';
+import { CabecalhoPublico } from '@/components/cabecalho-publico';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
@@ -22,35 +21,13 @@ export function Cabecalho({
   etapa: number | null; // null = tela final, sem "Etapa x de 3"
   onVoltar: (() => void) | null; // null = volta para a página inicial
 }) {
-  const classe = 'size-9 rounded-full bg-card';
   return (
-    <header
-      className="sticky top-0 z-40 border-b border-border bg-background/95 backdrop-blur-md"
-      style={{ paddingTop: 'env(safe-area-inset-top)' }}
-    >
-      <div className="mx-auto flex h-16 max-w-xl items-center gap-3 px-5">
-        {onVoltar ? (
-          <Button type="button" variant="outline" size="icon" className={classe} onClick={onVoltar} aria-label="Voltar para a etapa anterior">
-            <ChevronLeft />
-          </Button>
-        ) : (
-          <Button asChild variant="outline" size="icon" className={classe}>
-            <Link href="/" aria-label="Voltar para o início">
-              <ChevronLeft />
-            </Link>
-          </Button>
-        )}
-        <div className="min-w-0 flex-1 leading-tight">
-          <p className="text-sm font-semibold text-foreground">Registrar Ocorrência</p>
-          {etapa !== null && (
-            <p className="text-xs text-muted-foreground">
-              Etapa {etapa + 1} de {ETAPAS.length} — {ETAPAS[etapa]}
-            </p>
-          )}
-        </div>
-        <Image src="/logo-caapora.png" alt="Instituto Caapora" width={456} height={547} className="h-9 w-9 object-contain" priority />
-      </div>
-    </header>
+    <CabecalhoPublico
+      titulo="Registrar Ocorrência"
+      subtitulo={etapa !== null ? `Etapa ${etapa + 1} de ${ETAPAS.length} — ${ETAPAS[etapa]}` : undefined}
+      voltar={onVoltar ?? '/'}
+      rotuloVoltar={onVoltar ? 'Voltar para a etapa anterior' : 'Voltar para o início'}
+    />
   );
 }
 

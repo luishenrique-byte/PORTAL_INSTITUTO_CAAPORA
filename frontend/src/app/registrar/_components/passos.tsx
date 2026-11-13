@@ -17,6 +17,7 @@ import {
   type CategoriaAnimal,
   type SaudeStatus,
 } from '@/lib/api';
+import { CATEGORIAS } from '@/lib/ocorrencia';
 import { cn } from '@/lib/utils';
 import { Rotulo, Titulo, campoClasse } from './ui';
 
@@ -166,15 +167,6 @@ export const passo1Valido = (d: DadosFormulario) => d.latitude !== null || d.end
 // Passo 2 — Detalhes do animal
 // ---------------------------------------------------------------------------
 
-const CATEGORIAS: { valor: CategoriaAnimal; rotulo: string; icone: string }[] = [
-  { valor: 'AVE', rotulo: 'Ave', icone: '🐦' },
-  { valor: 'REPTIL', rotulo: 'Réptil', icone: '🦎' },
-  { valor: 'MAMIFERO', rotulo: 'Mamífero', icone: '🐿️' },
-  { valor: 'ANFIBIO', rotulo: 'Anfíbio', icone: '🐸' },
-  { valor: 'PEIXE', rotulo: 'Peixe', icone: '🐟' },
-  { valor: 'INDEFINIDO', rotulo: 'Não sei', icone: '❓' },
-];
-
 const ESTADOS_SAUDE: { valor: SaudeStatus; rotulo: string; cor: string }[] = [
   { valor: 'FERIDO', rotulo: 'Ferido / machucado', cor: 'bg-destructive' },
   { valor: 'DOENTE', rotulo: 'Doente / debilitado', cor: 'bg-cta' },
@@ -252,7 +244,7 @@ export function PassoAnimal({ dados, atualizar }: { dados: DadosFormulario; atua
         <Textarea
           id="descricao"
           rows={3}
-          maxLength={1000}
+          maxLength={255}
           className="min-h-24 resize-none rounded-lg bg-card px-4 py-3 text-[0.95rem] md:text-[0.95rem]"
           placeholder="Descreva o que você viu — comportamento, ferimentos visíveis, há quanto tempo…"
           value={dados.descricao}
