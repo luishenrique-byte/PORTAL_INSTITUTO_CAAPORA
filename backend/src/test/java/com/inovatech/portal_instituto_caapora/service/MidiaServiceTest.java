@@ -18,6 +18,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
+import org.springframework.mock.web.MockMultipartFile;
 
 import java.util.List;
 import java.util.Optional;
@@ -35,17 +36,59 @@ class MidiaServiceTest {
 
     @Mock MidiaRepository midiaRepository;
     @Mock OcorrenciaRepository ocorrenciaRepository;
+    @Mock ArmazenamentoArquivoService armazenamento;
 
     @InjectMocks MidiaService service;
 
     private final OcorrenciaEntity emAndamento = ocorrencia(10L, OcorrenciaStatus.TRIAGEM);
     private final OcorrenciaEntity concluida = ocorrencia(11L, OcorrenciaStatus.CONCLUIDO);
+    private final OcorrenciaEntity registrada = ocorrencia(12L, OcorrenciaStatus.REGISTRADA);
+    private final MockMultipartFile foto = new MockMultipartFile("arquivo", "f.jpg", "image/jpeg", new byte[]{1});
 
     @BeforeEach
     void setUp() {
         when(midiaRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
         when(ocorrenciaRepository.findById(10L)).thenReturn(Optional.of(emAndamento));
         when(ocorrenciaRepository.findById(11L)).thenReturn(Optional.of(concluida));
+        when(ocorrenciaRepository.findByProtocolo("CAA-12")).thenReturn(Optional.of(registrada));
+        when(ocorrenciaRepository.findByProtocolo("CAA-10")).thenReturn(Optional.of(emAndamento));
+        when(armazenamento.identificarTipo(any())).thenReturn(TipoMidia.FOTO);
+        when(armazenamento.salvar(any())).thenReturn("/uploads/abc.jpg");
+    }
+
+    @Test
+    void enviaArquivoPeloProtocolo() {
+        MidiaResponseDTO resposta = service.enviarArquivoPublico("CAA-12", foto);
+
+        assertEquals("/uploads/abc.jpg", resposta.url());
+        assertEquals(TipoMidia.FOTO, resposta.tipoMidia());
+    }
+
+    @Test
+    void naoAceitaArquivoDepoisDaTriagem() {
+        assertThrows(RegraNegocioException.class, () -> service.enviarArquivoPublico("CAA-10", foto));
+        verify(armazenamento, never()).salvar(any());
+    }
+
+    @Test
+    void naoAceitaMaisQueCincoArquivos() {
+        when(midiaRepository.countByOcorrenciaId(12L)).thenReturn(5L);
+
+        assertThrows(RegraNegocioException.class, () -> service.enviarArquivoPublico("CAA-12", foto));
+        verify(armazenamento, never()).salvar(any());
+    }
+
+    @Test
+    void protocoloInexistenteDaErroNoUpload() {
+        assertThrows(RecursoNaoEncontradoException.class, () -> service.enviarArquivoPublico("CAA-99", foto));
+    }
+
+    @Test
+    void apagaArquivoSeOBancoFalhar() {
+        when(midiaRepository.save(any())).thenThrow(new RuntimeException("falha"));
+
+        assertThrows(RuntimeException.class, () -> service.enviarArquivoPublico("CAA-12", foto));
+        verify(armazenamento).apagar("/uploads/abc.jpg");
     }
 
     @Test
@@ -93,6 +136,7 @@ class MidiaServiceTest {
         service.remover(1L);
 
         verify(midiaRepository).delete(midia);
+        verify(armazenamento).apagar("/uploads/1");
     }
 
     private OcorrenciaEntity ocorrencia(Long id, OcorrenciaStatus status) {
