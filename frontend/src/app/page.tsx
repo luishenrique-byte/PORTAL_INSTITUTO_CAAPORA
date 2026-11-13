@@ -92,7 +92,7 @@ function Nav() {
             Acompanhar
           </a>
         </nav>
-        <RegisterLink className="hidden items-center gap-2 rounded-full bg-accent px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-[#a84016] md:inline-flex">
+        <RegisterLink className="hidden items-center gap-2 rounded-full bg-cta px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-[#a84016] md:inline-flex">
           Registrar Ocorrência
         </RegisterLink>
         <button
@@ -143,7 +143,7 @@ function Nav() {
           >
             Acompanhar ocorrência
           </a>
-          <RegisterLink className="rounded-full bg-accent-5 py-3 text-center text-sm font-semibold text-white">
+          <RegisterLink className="rounded-full bg-cta py-3 text-center text-sm font-semibold text-white">
             Registrar Ocorrência
           </RegisterLink>
         </div>
@@ -173,7 +173,7 @@ function Hero() {
       <div className="relative z-10 mx-auto w-full max-w-6xl px-5 pb-20 md:pb-28">
         <div className="max-w-2xl">
           <span
-            className="fade-up mb-6 inline-block rounded-full bg-accent px-3 py-1.5 text-xs font-semibold uppercase tracking-widest text-white"
+            className="fade-up mb-6 inline-block rounded-full bg-cta px-3 py-1.5 text-xs font-semibold uppercase tracking-widest text-white"
             style={{ fontFamily: 'var(--font-body)' }}
           >
             Proteção da Fauna Silvestre
@@ -195,7 +195,7 @@ function Hero() {
             nossa equipe entra em ação.
           </p>
           <div className="fade-up fade-up-delay-3 flex flex-col gap-4 sm:flex-row">
-            <RegisterLink className="inline-flex scale-100 items-center justify-center gap-2.5 rounded-full bg-accent px-8 py-4 text-base font-semibold text-white shadow-lg shadow-accent/30 transition-all duration-200 hover:bg-[#a84016] active:scale-95">
+            <RegisterLink className="inline-flex scale-100 items-center justify-center gap-2.5 rounded-full bg-cta px-8 py-4 text-base font-semibold text-white shadow-lg shadow-cta/30 transition-all duration-200 hover:bg-[#a84016] active:scale-95">
               <svg
                 className="h-5 w-5"
                 fill="none"
@@ -540,7 +540,7 @@ function CTASection() {
           Não espere. Cada minuto conta. Registre a ocorrência agora e nossa
           equipe de resgate será acionada imediatamente.
         </p>
-        <RegisterLink className="mb-6 inline-flex scale-100 items-center gap-3 rounded-full bg-accent px-10 py-5 text-lg font-bold text-white shadow-2xl shadow-accent/40 transition-all duration-200 hover:bg-[#e06020] active:scale-95">
+        <RegisterLink className="mb-6 inline-flex scale-100 items-center gap-3 rounded-full bg-cta px-10 py-5 text-lg font-bold text-white shadow-2xl shadow-cta/40 transition-all duration-200 hover:bg-[#e06020] active:scale-95">
           <svg
             className="h-6 w-6"
             fill="none"
