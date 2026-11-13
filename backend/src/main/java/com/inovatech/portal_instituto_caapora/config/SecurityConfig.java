@@ -42,6 +42,8 @@ public class SecurityConfig {
                     .requestMatchers("/ocorrencias/publica").permitAll()
                     .requestMatchers("/ocorrencias/rastreio/**").permitAll()
                     .requestMatchers("/ocorrencias/*/midias").permitAll()
+                    .requestMatchers(HttpMethod.POST, "/ocorrencias/publica/*/midias").permitAll()
+                    .requestMatchers(HttpMethod.GET, "/uploads/**").permitAll()
                     .requestMatchers(
                             "/swagger-ui/**",
                             "/swagger-ui.html/**" ,

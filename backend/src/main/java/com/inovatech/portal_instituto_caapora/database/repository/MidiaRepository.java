@@ -10,4 +10,6 @@ import java.util.List;
 public interface MidiaRepository extends JpaRepository<MidiaEntity, Long> {
 
     List<MidiaEntity> findByOcorrenciaId(Long ocorrenciaId);
+
+    long countByOcorrenciaId(Long ocorrenciaId);
 }

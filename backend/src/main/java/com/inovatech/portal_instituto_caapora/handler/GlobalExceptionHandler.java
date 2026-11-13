@@ -2,6 +2,7 @@ package com.inovatech.portal_instituto_caapora.handler;
 
 import com.inovatech.portal_instituto_caapora.exception.RecursoNaoEncontradoException;
 import com.inovatech.portal_instituto_caapora.exception.RegraNegocioException;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -9,6 +10,8 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
+import org.springframework.web.multipart.support.MissingServletRequestPartException;
 
 import java.util.Map;
 
@@ -54,5 +57,27 @@ public class GlobalExceptionHandler {
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public Map<String, String> tratarTipoInvalido(MethodArgumentTypeMismatchException e) {
         return Map.of("erro", "Valor inválido para o parâmetro '" + e.getName() + "'");
+    }
+
+    // Violação de restrição do banco (ex.: protocolo repetido gerado ao mesmo tempo
+    // por duas requisições). A transação é desfeita; o cliente pode reenviar -> 409
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    @ResponseStatus(HttpStatus.CONFLICT)
+    public Map<String, String> tratarConflito(DataIntegrityViolationException e) {
+        return Map.of("erro", "Não foi possível salvar agora. Tente novamente.");
+    }
+
+    // Arquivo maior que o limite de spring.servlet.multipart.max-file-size -> 413
+    @ExceptionHandler(MaxUploadSizeExceededException.class)
+    @ResponseStatus(HttpStatus.CONTENT_TOO_LARGE)
+    public Map<String, String> tratarArquivoGrande(MaxUploadSizeExceededException e) {
+        return Map.of("erro", "Arquivo maior que o limite permitido");
+    }
+
+    // Upload sem o campo "arquivo" -> 400
+    @ExceptionHandler(MissingServletRequestPartException.class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public Map<String, String> tratarArquivoAusente(MissingServletRequestPartException e) {
+        return Map.of("erro", "Campo '" + e.getRequestPartName() + "' é obrigatório");
     }
 }

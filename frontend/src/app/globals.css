@@ -1,27 +1,105 @@
 @import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,600;0,9..144,700;1,9..144,300;1,9..144,600&family=Outfit:wght@300;400;500;600;700&display=swap');
 @import 'tailwindcss';
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
 
-@theme inline {
-  --color-background: #f5f0e8;
-  --color-foreground: #1c2b1a;
-  --color-card: #ffffff;
-  --color-card-foreground: #1c2b1a;
-  --color-primary: #2d6a2f;
-  --color-primary-foreground: #ffffff;
-  --color-secondary: #e8f0e4;
-  --color-secondary-foreground: #2d6a2f;
-  --color-muted: #ede8dd;
-  --color-muted-foreground: #4a5e48;
-  --color-accent: #c8501a;
-  --color-accent-foreground: #ffffff;
-  --color-border: #d0c9b8;
-  --color-ring: #2d6a2f;
-  --radius: 0.375rem;
-}
+@custom-variant dark (&:is(.dark *));
 
+/* ==========================================================================
+   Paleta do Instituto Caapora ligada às variáveis do shadcn/ui.
+   Os componentes em src/components/ui usam estes tokens (bg-primary,
+   border-input, ring-ring...), então já saem com a identidade do projeto.
+   - cta: laranja dos botões de ação ("Registrar", "Enviar ocorrência")
+   - accent: fundo suave de hover/seleção (padrão do shadcn), NÃO é o laranja
+   ========================================================================== */
 :root {
   --font-display: 'Fraunces', serif;
   --font-body: 'Outfit', sans-serif;
+
+  --radius: 0.625rem;
+
+  --background: #f5f0e8;
+  --foreground: #1c2b1a;
+  --card: #ffffff;
+  --card-foreground: #1c2b1a;
+  --popover: #ffffff;
+  --popover-foreground: #1c2b1a;
+  --primary: #2d6a2f;
+  --primary-foreground: #ffffff;
+  --secondary: #e8f0e4;
+  --secondary-foreground: #2d6a2f;
+  --muted: #ede8dd;
+  --muted-foreground: #4a5e48;
+  --accent: #e8f0e4;
+  --accent-foreground: #1c2b1a;
+  --cta: #c8501a;
+  --cta-foreground: #ffffff;
+  --destructive: #b42318;
+  --border: #d0c9b8;
+  --input: #d0c9b8;
+  --ring: #2d6a2f;
+
+  --chart-1: #2d6a2f;
+  --chart-2: #c8501a;
+  --chart-3: #d4a017;
+  --chart-4: #4a5e48;
+  --chart-5: #a8d5a2;
+
+  --sidebar: #1c2b1a;
+  --sidebar-foreground: #f5f0e8;
+  --sidebar-primary: #a8d5a2;
+  --sidebar-primary-foreground: #1c2b1a;
+  --sidebar-accent: #2d3d2a;
+  --sidebar-accent-foreground: #f5f0e8;
+  --sidebar-border: #2d6a2f4d;
+  --sidebar-ring: #a8d5a2;
+}
+
+@theme inline {
+  --font-sans: var(--font-body);
+  --font-heading: var(--font-display);
+
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-cta: var(--cta);
+  --color-cta-foreground: var(--cta-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
 }
 
 * {
@@ -39,20 +117,8 @@ html {
 body {
   min-height: 100vh;
   margin: 0;
-  background-color: #f5f0e8;
-  color: #1c2b1a;
-  font-family: var(--font-body);
   font-size: 1.0625rem;
   line-height: 1.7;
-}
-
-h1,
-h2,
-h3,
-h4,
-h5,
-h6 {
-  font-family: var(--font-display);
 }
 
 a:focus-visible,
@@ -82,5 +148,24 @@ button:focus-visible {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
+  }
+}
+
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+  button:not(:disabled), [role="button"]:not(:disabled) {
+    cursor: pointer;
+  }
+  html {
+    @apply font-sans;
+  }
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-display);
   }
 }

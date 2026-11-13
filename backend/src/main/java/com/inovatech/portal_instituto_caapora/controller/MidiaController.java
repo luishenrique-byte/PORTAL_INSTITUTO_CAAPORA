@@ -6,7 +6,9 @@ import com.inovatech.portal_instituto_caapora.service.MidiaService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
@@ -25,6 +27,16 @@ public class MidiaController {
     public MidiaResponseDTO adicionar(@PathVariable Long ocorrenciaId,
                                       @Valid @RequestBody MidiaRequestDTO dto) {
         return midiaService.adicionar(ocorrenciaId, dto);
+    }
+
+    // Upload público de foto ou vídeo, um arquivo por requisição (até 5 por ocorrência).
+    // multipart/form-data com o campo "arquivo"
+    // POST /ocorrencias/publica/CAA-260922-17852/midias
+    @PostMapping(value = "/ocorrencias/publica/{protocolo}/midias", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @ResponseStatus(HttpStatus.CREATED)
+    public MidiaResponseDTO enviarArquivo(@PathVariable String protocolo,
+                                          @RequestPart("arquivo") MultipartFile arquivo) {
+        return midiaService.enviarArquivoPublico(protocolo, arquivo);
     }
 
     // GET /ocorrencias/10/midias

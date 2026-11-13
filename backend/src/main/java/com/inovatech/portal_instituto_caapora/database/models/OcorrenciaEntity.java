@@ -22,7 +22,8 @@ public class OcorrenciaEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false, name = "protocolo")
+    // unique: garante no banco que dois registros simultâneos não fiquem com o mesmo protocolo
+    @Column(nullable = false, unique = true, name = "protocolo")
     private String protocolo;
 
     @Column(nullable = false, name = "data_hora")

@@ -1,13 +1,17 @@
 spring:
   application:
     name: portal_instituto_caapora
+  servlet:
+    multipart:
+      max-file-size: ${UPLOAD_MAX_FILE_SIZE:20MB}
+      max-request-size: ${UPLOAD_MAX_REQUEST_SIZE:21MB}
   datasource:
-    url: jdbc:postgresql://localhost:5432/dbInstituto_Caapora
+    url: ${DATABASE_URL:jdbc:postgresql://localhost:5432/dbInstituto_Caapora} #Variavel de Ambiente
     username: ${DATABASE_USERNAME:postgres} #Variavel de Ambiente
     password: ${DATABASE_PASSWORD:12345} #Variavel de Ambiente
   jpa:
     hibernate:
-      ddl-auto: create-drop
+      ddl-auto: ${DDL_AUTO:create-drop} # no Docker usa 'update' para não apagar os dados
     show-sql: true
     properties:
       hibernate:
@@ -16,3 +20,9 @@ spring:
   jwt:
     expiration: ${JWT_EXPIRATION:900000}
     key: ${JWT_KEY:5P00Qvu+B0OFAKrDRikLhf46mhlwTz18UAF/E01tjYIY3m6U808DcJLkaSk6AOFQJMS7LdVLe2E5DeT8yyDCww==}
+
+app:
+  cors:
+    allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:3000} # separar por vírgula
+  uploads:
+    dir: ${UPLOADS_DIR:uploads} # pasta onde fotos e vídeos enviados são guardados
