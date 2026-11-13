@@ -1,0 +1,15 @@
+# Uso local: publica as portas na sua máquina.
+# Já é carregado automaticamente se o .env tiver COMPOSE_FILE (veja .env.example), ou rode:
+#   docker compose -f docker-compose.yml -f docker-compose.local.yml up --build
+# Não use no servidor: lá quem expõe os serviços é o proxy do Easypanel.
+services:
+  db:
+    ports:
+      # 5433 na máquina para não conflitar com um Postgres local na 5432
+      - "${DB_PORT:-5433}:5432"
+  api:
+    ports:
+      - "${API_PORT:-8080}:8080"
+  web:
+    ports:
+      - "${WEB_PORT:-3000}:3000"
