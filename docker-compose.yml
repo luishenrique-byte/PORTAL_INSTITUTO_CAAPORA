@@ -34,6 +34,8 @@ services:
       DDL_AUTO: ${DDL_AUTO:-update}
       CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost:3000}
       UPLOADS_DIR: /app/uploads
+      # As datas do backend são LocalDateTime (sem fuso): a JVM precisa usar o horário de Brasília
+      JAVA_TOOL_OPTIONS: -Duser.timezone=${TZ_APP:-America/Sao_Paulo}
     ports:
       - "${API_PORT:-8080}:8080"
     volumes:
