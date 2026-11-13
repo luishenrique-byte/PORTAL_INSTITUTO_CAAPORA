@@ -137,3 +137,27 @@ export const MIDIA_TIPOS_ACEITOS = [
   'video/quicktime',
   'video/webm',
 ];
+
+// ---------- Painel administrativo ----------
+
+// POST /auth/login. expiresIn vem em milissegundos (spring.jwt.expiration).
+export interface TokenResponse {
+  token: string;
+  expiresIn: number;
+}
+
+export async function entrar(email: string, senha: string) {
+  try {
+    return await requisitar<TokenResponse>('/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, senha }),
+    });
+  } catch (e) {
+    // Credenciais erradas: o Spring Security responde 401 sem corpo
+    if (e instanceof ApiError && e.status === 401) {
+      throw new ApiError('E-mail ou senha incorretos.', 401);
+    }
+    throw e;
+  }
+}
