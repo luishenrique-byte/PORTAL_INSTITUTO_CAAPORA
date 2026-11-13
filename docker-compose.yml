@@ -1,3 +1,7 @@
+# Compose de produção (Easypanel): nenhum serviço publica porta no servidor.
+# O acesso externo é feito pelo proxy do Easypanel, pelos domínios configurados no painel
+# (web -> porta 3000, api -> porta 8080).
+# Para rodar na sua máquina com as portas abertas, veja docker-compose.local.yml.
 services:
   # ---------- Banco de dados ----------
   db:
@@ -6,9 +10,6 @@ services:
       POSTGRES_DB: ${DB_NAME:-dbInstituto_Caapora}
       POSTGRES_USER: ${DB_USER:-postgres}
       POSTGRES_PASSWORD: ${DB_PASSWORD:-12345}
-    ports:
-      # 5433 na máquina para não conflitar com um Postgres local na 5432
-      - "${DB_PORT:-5433}:5432"
     volumes:
       - db-data:/var/lib/postgresql/data
     healthcheck:
@@ -36,8 +37,8 @@ services:
       UPLOADS_DIR: /app/uploads
       # As datas do backend são LocalDateTime (sem fuso): a JVM precisa usar o horário de Brasília
       JAVA_TOOL_OPTIONS: -Duser.timezone=${TZ_APP:-America/Sao_Paulo}
-    ports:
-      - "${API_PORT:-8080}:8080"
+    expose:
+      - "8080"
     volumes:
       - uploads:/app/uploads
     depends_on:
@@ -59,8 +60,8 @@ services:
       args:
         # Endereço da API visto pelo navegador do usuário (não pelo container)
         NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:8080}
-    ports:
-      - "${WEB_PORT:-3000}:3000"
+    expose:
+      - "3000"
     depends_on:
       - api
     restart: unless-stopped
