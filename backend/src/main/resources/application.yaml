@@ -26,3 +26,8 @@ app:
     allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:3000} # separar por vírgula
   uploads:
     dir: ${UPLOADS_DIR:uploads} # pasta onde fotos e vídeos enviados são guardados
+  bootstrap:
+    admin:
+      nome: ${BOOTSTRAP_ADMIN_NAME:Admin}
+      email: ${BOOTSTRAP_ADMIN_EMAIL:admin@institutocaapora.com.br}
+      senha: ${BOOTSTRAP_ADMIN_PASSWORD}
