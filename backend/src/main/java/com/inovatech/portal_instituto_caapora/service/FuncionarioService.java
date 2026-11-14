@@ -6,6 +6,7 @@ import com.inovatech.portal_instituto_caapora.dto.request.FuncionarioRequestDTO;
 import com.inovatech.portal_instituto_caapora.dto.response.FuncionarioResponseDTO;
 import com.inovatech.portal_instituto_caapora.exception.RecursoNaoEncontradoException;
 import com.inovatech.portal_instituto_caapora.exception.RegraNegocioException;
+import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -72,6 +73,17 @@ public class FuncionarioService {
     @Transactional(readOnly = true)
     public FuncionarioResponseDTO buscarPorId(Long id) {
         return FuncionarioResponseDTO.fromEntity(buscarEntidade(id));
+    }
+
+    @Transactional(readOnly = true)
+    public FuncionarioResponseDTO buscarPorEmail(String email) {
+        return FuncionarioResponseDTO.fromEntity(funcionarioRepository.findByEmail(email)
+                .orElseThrow(() -> new EntityNotFoundException("Funcionario com o e-mail " + email + " nãoi encontrado.")));
+    }
+
+    @Transactional(readOnly = true)
+    public boolean existsByEmail(String email) {
+        return funcionarioRepository.existsByEmail(email);
     }
 
     FuncionarioEntity buscarEntidade(Long id) {
