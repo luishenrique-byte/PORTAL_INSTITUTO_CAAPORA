@@ -33,6 +33,8 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
+import org.springframework.mock.web.MockMultipartFile;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -43,6 +45,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -61,8 +64,12 @@ class OcorrenciaServiceTest {
     @Mock FuncionarioService funcionarioService;
     @Mock EquipeService equipeService;
     @Mock GeradorProtocolo geradorProtocolo;
+    @Mock MidiaService midiaService;
 
     @InjectMocks OcorrenciaService service;
+
+    private final List<MultipartFile> fotos =
+            List.of(new MockMultipartFile("arquivos", "f.jpg", "image/jpeg", new byte[]{1}));
 
     private final FuncionarioEntity atendente = FuncionarioEntity.builder().id(1L).nome("Ana").ativo(true).build();
 
@@ -85,7 +92,7 @@ class OcorrenciaServiceTest {
 
     @Test
     void registroPublicoForcaOrigemAppPublicoECalculaUrgencia() {
-        OcorrenciaResponseDTO resposta = service.registrarPublica(dto(null, "Rua A", null));
+        OcorrenciaResponseDTO resposta = service.registrarPublica(dto(null, "Rua A", null), fotos);
 
         assertEquals(OrigemRegistro.APP_PUBLICO, resposta.origemRegistro());
         assertEquals(OcorrenciaStatus.REGISTRADA, resposta.ocorrenciaStatus());
@@ -99,8 +106,28 @@ class OcorrenciaServiceTest {
 
     @Test
     void registroSemGpsESemEnderecoEhRecusado() {
-        assertThrows(RegraNegocioException.class, () -> service.registrarPublica(dto(null, "  ", null)));
+        assertThrows(RegraNegocioException.class, () -> service.registrarPublica(dto(null, "  ", null), fotos));
         verify(ocorrenciaRepository, never()).save(any());
+    }
+
+    @Test
+    void registroPublicoSemFotoNaoSalvaNada() {
+        doThrow(new RegraNegocioException("Envie pelo menos uma foto do animal"))
+                .when(midiaService).validarArquivosPublicos(List.of());
+
+        assertThrows(RegraNegocioException.class, () -> service.registrarPublica(dto(null, "Rua A", null), List.of()));
+        verify(animalRepository, never()).save(any());
+        verify(ocorrenciaRepository, never()).save(any());
+        verify(midiaService, never()).anexarArquivosPublicos(any(), any());
+    }
+
+    @Test
+    void registroPublicoAnexaAsFotosNaOcorrenciaCriada() {
+        service.registrarPublica(dto(null, "Rua A", null), fotos);
+
+        ArgumentCaptor<OcorrenciaEntity> criada = ArgumentCaptor.forClass(OcorrenciaEntity.class);
+        verify(midiaService).anexarArquivosPublicos(criada.capture(), org.mockito.ArgumentMatchers.eq(fotos));
+        assertEquals("CAA-261012-00001", criada.getValue().getProtocolo());
     }
 
     @Test
@@ -110,8 +137,7 @@ class OcorrenciaServiceTest {
 
     @Test
     void comunicanteAnonimoNaoTemDadosGuardados() {
-        OcorrenciaResponseDTO resposta = service.registrarPublica(
-                dto(null, "Rua A", new ReportanteRequestDTO("João", "71999999999", true)));
+        OcorrenciaResponseDTO resposta = service.registrarPublica(dto(null, "Rua A", new ReportanteRequestDTO("João", "71999999999", true)), fotos);
 
         assertNull(resposta.reportante().nome());
         assertNull(resposta.reportante().telefone());
@@ -122,7 +148,7 @@ class OcorrenciaServiceTest {
         when(geradorProtocolo.gerar()).thenReturn("CAA-261012-00001", "CAA-261012-00002");
         when(ocorrenciaRepository.existsByProtocolo("CAA-261012-00001")).thenReturn(true);
 
-        OcorrenciaResponseDTO resposta = service.registrarPublica(dto(null, "Rua A", null));
+        OcorrenciaResponseDTO resposta = service.registrarPublica(dto(null, "Rua A", null), fotos);
 
         assertEquals("CAA-261012-00002", resposta.protocolo());
     }

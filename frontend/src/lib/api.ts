@@ -45,12 +45,6 @@ export interface OcorrenciaResponse {
   dataHoraRegistro: string;
 }
 
-export interface MidiaResponse {
-  id: number;
-  url: string;
-  tipoMidia: TipoMidia;
-}
-
 export class ApiError extends Error {
   constructor(
     message: string,
@@ -108,21 +102,13 @@ export function rastrearOcorrencia(protocolo: string, signal?: AbortSignal) {
   });
 }
 
-export function registrarOcorrenciaPublica(dados: OcorrenciaPublicaRequest) {
-  return requisitar<OcorrenciaResponse>('/ocorrencias/publica', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(dados),
-  });
-}
-
-export function enviarMidiaPublica(protocolo: string, arquivo: File) {
+// POST /ocorrencias/publica (multipart): os dados vão na parte "dados" (JSON) e as
+// fotos/vídeos em "arquivos". O backend exige pelo menos uma foto e grava tudo junto.
+export function registrarOcorrenciaPublica(dados: OcorrenciaPublicaRequest, arquivos: File[]) {
   const form = new FormData();
-  form.append('arquivo', arquivo);
-  return requisitar<MidiaResponse>(
-    `/ocorrencias/publica/${encodeURIComponent(protocolo)}/midias`,
-    { method: 'POST', body: form },
-  );
+  form.append('dados', new Blob([JSON.stringify(dados)], { type: 'application/json' }));
+  for (const arquivo of arquivos) form.append('arquivos', arquivo);
+  return requisitar<OcorrenciaResponse>('/ocorrencias/publica', { method: 'POST', body: form });
 }
 
 // Mesmos limites do backend (application.yaml / ArmazenamentoArquivoService)
