@@ -13,7 +13,9 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -30,11 +32,16 @@ public class OcorrenciaController {
     // ---------------- Registro ----------------
 
     // Formulário público (cidadão, sem login)
-    // POST /ocorrencias/publica
-    @PostMapping("/publica")
+    // POST /ocorrencias/publica (multipart/form-data)
+    //   dados    -> JSON da ocorrência (parte com Content-Type application/json)
+    //   arquivos -> fotos/vídeos (1 a 5), com pelo menos uma foto
+    @PostMapping(value = "/publica", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @ResponseStatus(HttpStatus.CREATED)
-    public OcorrenciaResponseDTO registrarPublica(@Valid @RequestBody OcorrenciaRequestDTO dto) {
-        return ocorrenciaService.registrarPublica(dto);
+    public OcorrenciaResponseDTO registrarPublica(
+            @Valid @RequestPart("dados") OcorrenciaRequestDTO dto,
+            // opcional aqui só para o service responder "Envie pelo menos uma foto do animal"
+            @RequestPart(value = "arquivos", required = false) List<MultipartFile> arquivos) {
+        return ocorrenciaService.registrarPublica(dto, arquivos);
     }
 
     // Cadastro manual feito por um atendente (telefone/WhatsApp)

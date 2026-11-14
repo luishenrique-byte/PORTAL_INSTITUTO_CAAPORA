@@ -37,7 +37,7 @@ os chamados de resgate em um só lugar, com registro padronizado e retorno para 
 | Tela | Rota | O que faz |
 |---|---|---|
 | Página inicial | `/` | Apresenta o instituto, explica como funciona e leva ao registro |
-| Registrar ocorrência | `/registrar` | Fluxo em 3 etapas: **localização** (GPS ou endereço), **animal** (tipo, espécie, estado de saúde, descrição e até 5 fotos/vídeos) e **contato** (com opção de anonimato). Ao final, mostra o protocolo |
+| Registrar ocorrência | `/registrar` | Fluxo em 3 etapas: **localização** (GPS ou endereço), **animal** (tipo, espécie, estado de saúde, descrição e de 1 a 5 fotos/vídeos, com pelo menos uma foto) e **contato** (com opção de anonimato). Ao final, mostra o protocolo |
 | Acompanhar ocorrência | `/acompanhar` | Busca pelo número de protocolo (`CAA-AAMMDD-XXXXX`) |
 | Detalhes da ocorrência | `/acompanhar/[protocolo]` | Situação atual, animal, local, equipe responsável e linha do tempo do atendimento |
 
@@ -166,8 +166,8 @@ A documentação completa e interativa fica no **Swagger** (`/swagger-ui/index.h
 
 | Método | Rota | Acesso | Descrição |
 |---|---|---|---|
-| `POST` | `/ocorrencias/publica` | público | Registra uma ocorrência e devolve o protocolo |
-| `POST` | `/ocorrencias/publica/{protocolo}/midias` | público | Envia foto ou vídeo (até 5 por ocorrência) |
+| `POST` | `/ocorrencias/publica` | público | Registra a ocorrência com as fotos (multipart: `dados` + `arquivos`, pelo menos uma foto) e devolve o protocolo |
+| `POST` | `/ocorrencias/publica/{protocolo}/midias` | público | Anexa outra foto ou vídeo enquanto a ocorrência está registrada (até 5 no total) |
 | `GET` | `/ocorrencias/rastreio/{protocolo}` | público | Consulta pública do andamento |
 | `POST` | `/auth/login` | público | Login da equipe, devolve o token JWT |
 | `GET` | `/ocorrencias`, `/ocorrencias/filtro` | equipe | Lista e filtra ocorrências |

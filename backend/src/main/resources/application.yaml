@@ -4,7 +4,7 @@ spring:
   servlet:
     multipart:
       max-file-size: ${UPLOAD_MAX_FILE_SIZE:20MB}
-      max-request-size: ${UPLOAD_MAX_REQUEST_SIZE:21MB}
+      max-request-size: ${UPLOAD_MAX_REQUEST_SIZE:101MB}
   datasource:
     url: ${DATABASE_URL:jdbc:postgresql://localhost:5432/dbInstituto_Caapora} #Variavel de Ambiente
     username: ${DATABASE_USERNAME:postgres} #Variavel de Ambiente
