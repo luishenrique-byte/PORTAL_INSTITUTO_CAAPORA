@@ -2,15 +2,13 @@
 
 import Link from 'next/link';
 import { useState } from 'react';
-import { Check, Copy, Search, Smartphone, Timer, TriangleAlert } from 'lucide-react';
+import { Check, Copy, Search, Smartphone, Timer } from 'lucide-react';
 import { toast } from 'sonner';
-import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 
 export interface ResultadoEnvio {
   protocolo: string;
   anonimo: boolean;
-  falhas: string[]; // nomes dos arquivos que não subiram
 }
 
 export function Sucesso({ resultado, onNova }: { resultado: ResultadoEnvio; onNova: () => void }) {
@@ -64,17 +62,6 @@ export function Sucesso({ resultado, onNova }: { resultado: ResultadoEnvio; onNo
             {copiado ? 'Copiado!' : 'Copiar protocolo'}
           </Button>
         </div>
-
-        {resultado.falhas.length > 0 && (
-          <Alert variant="destructive" className="mx-auto mt-4 max-w-sm border-destructive/30 bg-destructive/5">
-            <TriangleAlert />
-            <AlertDescription>
-              A ocorrência foi registrada, mas{' '}
-              {resultado.falhas.length === 1 ? 'um arquivo não pôde ser enviado' : `${resultado.falhas.length} arquivos não puderam ser enviados`}:{' '}
-              {resultado.falhas.join(', ')}.
-            </AlertDescription>
-          </Alert>
-        )}
 
         <ul className="mx-auto mt-4 max-w-sm space-y-2 rounded-2xl bg-muted px-5 py-4 text-left text-sm text-muted-foreground">
           {infos.map((i) => (

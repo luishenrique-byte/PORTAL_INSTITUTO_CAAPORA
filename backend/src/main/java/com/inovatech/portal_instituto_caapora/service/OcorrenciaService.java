@@ -30,6 +30,7 @@ import com.inovatech.portal_instituto_caapora.utils.GeradorProtocolo;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDateTime;
 import java.util.Comparator;
@@ -59,6 +60,7 @@ public class OcorrenciaService {
     private final FuncionarioService funcionarioService;
     private final EquipeService equipeService;
     private final GeradorProtocolo geradorProtocolo;
+    private final MidiaService midiaService;
 
     // ------------------------------------------------------------------
     // Registro
@@ -66,9 +68,15 @@ public class OcorrenciaService {
 
     // Formulário público, sem login (RF01, RN-01). A origem é sempre APP_PUBLICO,
     // independente do que vier no DTO, e o histórico inicial fica sem responsável.
+    // A foto do animal é obrigatória: a ocorrência e os arquivos são gravados juntos,
+    // na mesma transação. Sem foto válida, nada é salvo.
     @Transactional
-    public OcorrenciaResponseDTO registrarPublica(OcorrenciaRequestDTO dto) {
-        return registrar(dto, OrigemRegistro.APP_PUBLICO, null);
+    public OcorrenciaResponseDTO registrarPublica(OcorrenciaRequestDTO dto, List<MultipartFile> arquivos) {
+        validarLocalizacao(dto);
+        midiaService.validarArquivosPublicos(arquivos);
+        OcorrenciaEntity ocorrencia = registrar(dto, OrigemRegistro.APP_PUBLICO, null);
+        midiaService.anexarArquivosPublicos(ocorrencia, arquivos);
+        return OcorrenciaResponseDTO.fromEntity(ocorrencia);
     }
 
     // Cadastro manual pelo atendente, para chamados de telefone/WhatsApp (RF03, RF09).
@@ -79,10 +87,10 @@ public class OcorrenciaService {
             throw new RegraNegocioException("O grau de urgência é obrigatório no cadastro manual");
         }
         FuncionarioEntity atendente = funcionarioService.buscarAtivo(funcionarioId);
-        return registrar(dto, OrigemRegistro.CADASTRO_MANUAL, atendente);
+        return OcorrenciaResponseDTO.fromEntity(registrar(dto, OrigemRegistro.CADASTRO_MANUAL, atendente));
     }
 
-    private OcorrenciaResponseDTO registrar(OcorrenciaRequestDTO dto, OrigemRegistro origem,
+    private OcorrenciaEntity registrar(OcorrenciaRequestDTO dto, OrigemRegistro origem,
                                             FuncionarioEntity responsavel) {
         validarLocalizacao(dto);
 
@@ -114,7 +122,7 @@ public class OcorrenciaService {
         // Primeira linha da linha do tempo
         registrarHistorico(ocorrencia, OcorrenciaStatus.REGISTRADA, responsavel);
 
-        return OcorrenciaResponseDTO.fromEntity(ocorrencia);
+        return ocorrencia;
     }
 
     // RF02: precisa de coordenadas do GPS OU de um endereço digitado

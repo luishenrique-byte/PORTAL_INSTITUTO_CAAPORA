@@ -2,12 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { ChevronRight, TriangleAlert } from 'lucide-react';
-import {
-  ApiError,
-  enviarMidiaPublica,
-  registrarOcorrenciaPublica,
-  type OcorrenciaPublicaRequest,
-} from '@/lib/api';
+import { ApiError, registrarOcorrenciaPublica, type OcorrenciaPublicaRequest } from '@/lib/api';
 import {
   PassoAnimal,
   PassoContato,
@@ -74,29 +69,18 @@ export function RegistroOcorrencia() {
 
   async function enviar() {
     setErro('');
-    setEnviando('Enviando ocorrência…');
-    let protocolo: string;
+    setEnviando(
+      dados.arquivos.length === 1 ? 'Enviando ocorrência e foto…' : 'Enviando ocorrência e arquivos…',
+    );
     try {
-      protocolo = (await registrarOcorrenciaPublica(montarRequisicao(dados))).protocolo;
+      // Ocorrência e fotos vão juntas: ou fica tudo registrado, ou nada
+      const { protocolo } = await registrarOcorrenciaPublica(montarRequisicao(dados), dados.arquivos);
+      setResultado({ protocolo, anonimo: dados.anonimo });
     } catch (e) {
       setErro(e instanceof ApiError ? e.message : 'Erro inesperado. Tente novamente.');
+    } finally {
       setEnviando(null);
-      return;
     }
-
-    // A ocorrência já existe: falhas no upload não impedem o registro
-    const falhas: string[] = [];
-    for (const [i, arquivo] of dados.arquivos.entries()) {
-      setEnviando(`Enviando arquivos (${i + 1} de ${dados.arquivos.length})…`);
-      try {
-        await enviarMidiaPublica(protocolo, arquivo);
-      } catch {
-        falhas.push(arquivo.name);
-      }
-    }
-
-    setEnviando(null);
-    setResultado({ protocolo, anonimo: dados.anonimo, falhas });
   }
 
   function onSubmit(e: React.FormEvent) {

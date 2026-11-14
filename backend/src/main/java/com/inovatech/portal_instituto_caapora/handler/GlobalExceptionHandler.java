@@ -4,6 +4,7 @@ import com.inovatech.portal_instituto_caapora.exception.RecursoNaoEncontradoExce
 import com.inovatech.portal_instituto_caapora.exception.RegraNegocioException;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
+import org.springframework.web.HttpMediaTypeNotSupportedException;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -72,6 +73,14 @@ public class GlobalExceptionHandler {
     @ResponseStatus(HttpStatus.CONTENT_TOO_LARGE)
     public Map<String, String> tratarArquivoGrande(MaxUploadSizeExceededException e) {
         return Map.of("erro", "Arquivo maior que o limite permitido");
+    }
+
+    // Formato do corpo diferente do esperado (ex.: JSON puro no registro público,
+    // que agora é multipart) -> 415. Sem isto, o erro cairia em /error e viraria 401.
+    @ExceptionHandler(HttpMediaTypeNotSupportedException.class)
+    @ResponseStatus(HttpStatus.UNSUPPORTED_MEDIA_TYPE)
+    public Map<String, String> tratarFormatoNaoSuportado(HttpMediaTypeNotSupportedException e) {
+        return Map.of("erro", "Formato da requisição não suportado: " + e.getContentType());
     }
 
     // Upload sem o campo "arquivo" -> 400

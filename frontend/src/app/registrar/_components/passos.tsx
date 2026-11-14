@@ -257,7 +257,10 @@ export function PassoAnimal({ dados, atualizar }: { dados: DadosFormulario; atua
   );
 }
 
-export const passo2Valido = (d: DadosFormulario) => d.categoria !== null && d.saude !== null;
+// A foto do animal é obrigatória (o backend também recusa o registro sem foto)
+export const temFoto = (arquivos: File[]) => arquivos.some((f) => f.type.startsWith('image/'));
+export const passo2Valido = (d: DadosFormulario) =>
+  d.categoria !== null && d.saude !== null && temFoto(d.arquivos);
 
 function SeletorArquivos({ arquivos, onChange }: { arquivos: File[]; onChange: (a: File[]) => void }) {
   const input = useRef<HTMLInputElement>(null);
@@ -282,7 +285,10 @@ function SeletorArquivos({ arquivos, onChange }: { arquivos: File[]; onChange: (
   return (
     <div className="mt-7">
       <p className="mb-2 text-sm font-semibold text-foreground">
-        Fotos ou vídeos <span className="font-normal text-cta">(opcional · até {MIDIA_MAX_ARQUIVOS} arquivos)</span>
+        Fotos ou vídeos{' '}
+        <span className="font-normal text-muted-foreground">
+          (pelo menos 1 foto · até {MIDIA_MAX_ARQUIVOS} arquivos)
+        </span>
       </p>
       <div className="flex flex-wrap gap-2.5">
         {arquivos.map((f, i) => (
@@ -318,6 +324,9 @@ function SeletorArquivos({ arquivos, onChange }: { arquivos: File[]; onChange: (
         <p role="alert" className="mt-2 text-xs text-destructive">
           {aviso}
         </p>
+      )}
+      {arquivos.length > 0 && !temFoto(arquivos) && (
+        <p className="mt-2 text-xs text-destructive">Adicione pelo menos uma foto do animal.</p>
       )}
     </div>
   );

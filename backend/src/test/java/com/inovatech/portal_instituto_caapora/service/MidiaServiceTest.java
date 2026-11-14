@@ -44,6 +44,7 @@ class MidiaServiceTest {
     private final OcorrenciaEntity concluida = ocorrencia(11L, OcorrenciaStatus.CONCLUIDO);
     private final OcorrenciaEntity registrada = ocorrencia(12L, OcorrenciaStatus.REGISTRADA);
     private final MockMultipartFile foto = new MockMultipartFile("arquivo", "f.jpg", "image/jpeg", new byte[]{1});
+    private final MockMultipartFile video = new MockMultipartFile("arquivos", "v.mp4", "video/mp4", new byte[]{1});
 
     @BeforeEach
     void setUp() {
@@ -54,6 +55,54 @@ class MidiaServiceTest {
         when(ocorrenciaRepository.findByProtocolo("CAA-10")).thenReturn(Optional.of(emAndamento));
         when(armazenamento.identificarTipo(any())).thenReturn(TipoMidia.FOTO);
         when(armazenamento.salvar(any())).thenReturn("/uploads/abc.jpg");
+        when(armazenamento.identificarTipo(video)).thenReturn(TipoMidia.VIDEO);
+    }
+
+    // ---------- Registro público com fotos obrigatórias ----------
+
+    @Test
+    void registroPublicoExigePeloMenosUmArquivo() {
+        assertThrows(RegraNegocioException.class, () -> service.validarArquivosPublicos(null));
+        assertThrows(RegraNegocioException.class, () -> service.validarArquivosPublicos(java.util.List.of()));
+    }
+
+    @Test
+    void registroPublicoSoComVideoEhRecusado() {
+        RegraNegocioException e = assertThrows(RegraNegocioException.class,
+                () -> service.validarArquivosPublicos(java.util.List.of(video)));
+        assertEquals("Envie pelo menos uma foto do animal", e.getMessage());
+    }
+
+    @Test
+    void registroPublicoAceitaFotoComVideo() {
+        service.validarArquivosPublicos(java.util.List.of(video, foto));
+    }
+
+    @Test
+    void registroPublicoNaoAceitaMaisQueCincoArquivos() {
+        assertThrows(RegraNegocioException.class,
+                () -> service.validarArquivosPublicos(java.util.List.of(foto, foto, foto, foto, foto, foto)));
+    }
+
+    @Test
+    void anexaCadaArquivoNaOcorrencia() {
+        service.anexarArquivosPublicos(registrada, java.util.List.of(foto, video));
+
+        org.mockito.Mockito.verify(midiaRepository, org.mockito.Mockito.times(2)).save(any());
+    }
+
+    @Test
+    void apagaArquivosJaGravadosSeUmAnexoFalhar() {
+        when(armazenamento.salvar(foto)).thenReturn("/uploads/1.jpg");
+        when(armazenamento.salvar(video)).thenReturn("/uploads/2.mp4");
+        when(midiaRepository.save(any()))
+                .thenAnswer(inv -> inv.getArgument(0))
+                .thenThrow(new RuntimeException("falha"));
+
+        assertThrows(RuntimeException.class,
+                () -> service.anexarArquivosPublicos(registrada, java.util.List.of(foto, video)));
+        verify(armazenamento).apagar("/uploads/1.jpg");
+        verify(armazenamento).apagar("/uploads/2.mp4");
     }
 
     @Test
