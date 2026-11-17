@@ -23,7 +23,15 @@ export default function FormLogin() {
 
   // Quem já tem sessão válida vai direto para o painel
   useEffect(() => {
-    if (obterToken()) router.replace(DESTINO);
+    if (obterToken()) {
+      router.replace(DESTINO);
+      return;
+    }
+    // O painel manda para cá com ?sessao=expirada quando o token vence
+    if (new URLSearchParams(window.location.search).get('sessao') === 'expirada') {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- a URL só é lida no navegador
+      setErro('Sua sessão expirou. Entre novamente para continuar.');
+    }
   }, [router]);
 
   async function aoEnviar(e: FormEvent<HTMLFormElement>) {

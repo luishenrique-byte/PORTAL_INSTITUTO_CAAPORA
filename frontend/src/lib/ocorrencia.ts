@@ -1,5 +1,6 @@
-// Rótulos e textos das ocorrências usados nas telas públicas (registro e acompanhamento).
-import type { CategoriaAnimal, OcorrenciaStatus } from './api';
+// Rótulos e textos das ocorrências (telas públicas e painel administrativo).
+import type { CategoriaAnimal, OcorrenciaStatus, SaudeStatus } from './api';
+import type { GrauUrgencia, OrigemRegistro } from './painel';
 
 export const CATEGORIAS: { valor: CategoriaAnimal; rotulo: string; icone: string }[] = [
   { valor: 'AVE', rotulo: 'Ave', icone: '🐦' },
@@ -60,3 +61,58 @@ export function dataCompleta(iso: string) {
   const d = data(iso);
   return `${diaMes(d)} ${d.getFullYear()} · ${fmtHora.format(d)}`;
 }
+
+// ---------- Painel administrativo ----------
+
+export const SAUDE: { valor: SaudeStatus; rotulo: string }[] = [
+  { valor: 'FERIDO', rotulo: 'Ferido' },
+  { valor: 'DOENTE', rotulo: 'Doente / debilitado' },
+  { valor: 'PRESO', rotulo: 'Preso / enroscado' },
+  { valor: 'ORFAO', rotulo: 'Filhote órfão' },
+  { valor: 'OBITO', rotulo: 'Sem vida' },
+  { valor: 'INDEFINIDO', rotulo: 'Não avaliado' },
+];
+
+export const rotuloSaude = (s: SaudeStatus | null | undefined) =>
+  SAUDE.find((x) => x.valor === s)?.rotulo ?? 'Não avaliado';
+
+// Do menos para o mais urgente (mesma ordem do enum GrauUrgencia)
+export const URGENCIAS: { valor: GrauUrgencia; rotulo: string }[] = [
+  { valor: 'BAIXA', rotulo: 'Baixa' },
+  { valor: 'MEDIA', rotulo: 'Média' },
+  { valor: 'ALTA', rotulo: 'Alta' },
+  { valor: 'CRITICA', rotulo: 'Crítica' },
+];
+
+export const rotuloUrgencia = (u: GrauUrgencia | null | undefined) =>
+  URGENCIAS.find((x) => x.valor === u)?.rotulo ?? 'Sem urgência';
+
+export const rotuloOrigem = (o: OrigemRegistro) => (o === 'APP_PUBLICO' ? 'Portal público' : 'Cadastro manual');
+
+export const PERFIS: Record<string, string> = {
+  COORDENADOR: 'Coordenação',
+  ATENDENTE: 'Atendimento',
+  EQUIPE_CAMPO: 'Equipe de campo',
+};
+
+export const rotuloPerfil = (p: string | null | undefined) => (p ? (PERFIS[p.toUpperCase()] ?? p) : '—');
+
+// "2026-10" -> "out. 26"
+export function rotuloMes(anoMes: string) {
+  const [ano, mes] = anoMes.split('-').map(Number);
+  if (!ano || !mes) return anoMes;
+  return `${fmtMes.format(new Date(ano, mes - 1, 1))} ${String(ano).slice(2)}`;
+}
+
+// 95 -> "1 h 35 min"; 2900 -> "2 d 0 h"
+export function duracao(minutos: number | null | undefined) {
+  if (minutos === null || minutos === undefined) return '—';
+  const m = Math.round(minutos);
+  if (m < 60) return `${m} min`;
+  if (m < 60 * 24) return `${Math.floor(m / 60)} h ${m % 60} min`;
+  return `${Math.floor(m / 1440)} d ${Math.floor((m % 1440) / 60)} h`;
+}
+
+// <input type="date"> -> LocalDateTime aceito pelo backend
+export const inicioDoDia = (data: string) => (data ? `${data}T00:00:00` : null);
+export const fimDoDia = (data: string) => (data ? `${data}T23:59:59` : null);

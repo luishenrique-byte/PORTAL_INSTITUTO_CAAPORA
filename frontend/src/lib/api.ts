@@ -56,7 +56,10 @@ export class ApiError extends Error {
 
 // O backend responde erros como { "erro": "..." } ou { "campo": "mensagem" }
 async function lerErro(res: Response): Promise<ApiError> {
-  let mensagem = 'Não foi possível concluir. Tente novamente.';
+  let mensagem =
+    res.status === 403
+      ? 'Seu perfil não tem permissão para esta ação.'
+      : 'Não foi possível concluir. Tente novamente.';
   try {
     const corpo = (await res.json()) as Record<string, string>;
     mensagem = corpo.erro ?? Object.values(corpo)[0] ?? mensagem;
@@ -66,7 +69,7 @@ async function lerErro(res: Response): Promise<ApiError> {
   return new ApiError(mensagem, res.status);
 }
 
-async function requisitar<T>(caminho: string, init: RequestInit): Promise<T> {
+export async function requisitar<T>(caminho: string, init: RequestInit): Promise<T> {
   let res: Response;
   try {
     res = await fetch(`${API_URL}${caminho}`, init);
@@ -78,6 +81,8 @@ async function requisitar<T>(caminho: string, init: RequestInit): Promise<T> {
     );
   }
   if (!res.ok) throw await lerErro(res);
+  // 204 (ex.: DELETE /funcionarios/{id}) não tem corpo
+  if (res.status === 204) return undefined as T;
   return (await res.json()) as T;
 }
 
