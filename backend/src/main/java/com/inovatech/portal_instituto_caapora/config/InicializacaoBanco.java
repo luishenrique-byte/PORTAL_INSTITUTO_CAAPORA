@@ -1,6 +1,7 @@
 package com.inovatech.portal_instituto_caapora.config;
 
 import com.inovatech.portal_instituto_caapora.dto.request.FuncionarioRequestDTO;
+import com.inovatech.portal_instituto_caapora.database.repository.PerfilRepository;
 import com.inovatech.portal_instituto_caapora.dto.request.PerfilRequestDTO;
 import com.inovatech.portal_instituto_caapora.exception.UsuarioExistenteException;
 import com.inovatech.portal_instituto_caapora.service.FuncionarioService;
@@ -17,6 +18,7 @@ public class InicializacaoBanco implements CommandLineRunner {
 
     private final FuncionarioService funcionarioService;
     private final PerfilService perfilService;
+    private final PerfilRepository perfilRepository;
 
     private final MidiaService midiaService;
 
@@ -32,9 +34,13 @@ public class InicializacaoBanco implements CommandLineRunner {
     @Override
     public void run(String... args) throws Exception {
 
-        perfilService.criar(new PerfilRequestDTO("COORDENADOR"));
-        perfilService.criar(new PerfilRequestDTO("ATENDENTE"));
-        perfilService.criar(new PerfilRequestDTO("EQUIPE_CAMPO"));
+        // Com o banco persistente (DDL_AUTO=update) os perfis já existem a partir da
+        // segunda inicialização: cria só os que faltam para a API conseguir subir
+        for (String perfil : java.util.List.of("COORDENADOR", "ATENDENTE", "EQUIPE_CAMPO")) {
+            if (perfilRepository.findByPerfil(perfil).isEmpty()) {
+                perfilService.criar(new PerfilRequestDTO(perfil));
+            }
+        }
 
         if (funcionarioService.existsByEmail(emailAdmin)) {
             return;
