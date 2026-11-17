@@ -6,7 +6,9 @@ import com.inovatech.portal_instituto_caapora.dto.request.FuncionarioRequestDTO;
 import com.inovatech.portal_instituto_caapora.dto.response.FuncionarioResponseDTO;
 import com.inovatech.portal_instituto_caapora.exception.RecursoNaoEncontradoException;
 import com.inovatech.portal_instituto_caapora.exception.RegraNegocioException;
+import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -20,6 +22,7 @@ public class FuncionarioService {
     private final FuncionarioRepository funcionarioRepository;
     private final PerfilService perfilService;
     private final EquipeService equipeService;
+    private final PasswordEncoder passwordEncoder;
 
     @Transactional
     public FuncionarioResponseDTO criar(FuncionarioRequestDTO dto) {
@@ -29,6 +32,7 @@ public class FuncionarioService {
         FuncionarioEntity funcionario = FuncionarioEntity.builder()
                 .nome(dto.nome())
                 .email(dto.email())
+                .senha(passwordEncoder.encode(dto.senha()))
                 .perfil(perfilService.buscarEntidade(dto.perfilId()))
                 .equipe(dto.equipeId() != null ? equipeService.buscarEntidade(dto.equipeId()) : null)
                 .ativo(true)
@@ -69,6 +73,17 @@ public class FuncionarioService {
     @Transactional(readOnly = true)
     public FuncionarioResponseDTO buscarPorId(Long id) {
         return FuncionarioResponseDTO.fromEntity(buscarEntidade(id));
+    }
+
+    @Transactional(readOnly = true)
+    public FuncionarioResponseDTO buscarPorEmail(String email) {
+        return FuncionarioResponseDTO.fromEntity(funcionarioRepository.findByEmail(email)
+                .orElseThrow(() -> new EntityNotFoundException("Funcionario com o e-mail " + email + " nãoi encontrado.")));
+    }
+
+    @Transactional(readOnly = true)
+    public boolean existsByEmail(String email) {
+        return funcionarioRepository.existsByEmail(email);
     }
 
     FuncionarioEntity buscarEntidade(Long id) {

@@ -6,6 +6,7 @@ import com.inovatech.portal_instituto_caapora.dto.request.PerfilRequestDTO;
 import com.inovatech.portal_instituto_caapora.dto.response.PerfilResponseDTO;
 import com.inovatech.portal_instituto_caapora.exception.RecursoNaoEncontradoException;
 import com.inovatech.portal_instituto_caapora.exception.RegraNegocioException;
+import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -35,6 +36,12 @@ public class PerfilService {
     @Transactional(readOnly = true)
     public PerfilResponseDTO buscarPorId(Long id) {
         return PerfilResponseDTO.fromEntity(buscarEntidade(id));
+    }
+
+    @Transactional(readOnly = true)
+    public PerfilResponseDTO buscarPorPerfil(PerfilRequestDTO dto) {
+        return perfilRepository.findByPerfil(dto.perfil()).map(PerfilResponseDTO::fromEntity)
+                .orElseThrow(() -> new EntityNotFoundException("Perfil não encontrado"));
     }
 
     // Usado por outros services que precisam da entidade, não do DTO

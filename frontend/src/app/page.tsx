@@ -1,5 +1,6 @@
 'use client';
 
+import { Clock, MapPin, PawPrint, Users, type LucideIcon } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useState } from 'react';
@@ -84,15 +85,15 @@ function Nav() {
               {label}
             </a>
           ))}
-          <a
-            href={`mailto:${email}?subject=Acompanhar%20ocorr%C3%AAncia`}
+          <Link
+            href="/acompanhar"
             className="text-sm font-medium text-muted-foreground transition-colors hover:text-[#2d6a2f]"
             style={{ fontFamily: 'var(--font-body)' }}
           >
             Acompanhar
-          </a>
+          </Link>
         </nav>
-        <RegisterLink className="hidden items-center gap-2 rounded-full bg-accent px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-[#a84016] md:inline-flex">
+        <RegisterLink className="hidden items-center gap-2 rounded-full bg-cta px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-[#a84016] md:inline-flex">
           Registrar Ocorrência
         </RegisterLink>
         <button
@@ -136,14 +137,14 @@ function Nav() {
               {label}
             </a>
           ))}
-          <a
-            href={`mailto:${email}?subject=Acompanhar%20ocorr%C3%AAncia`}
+          <Link
+            href="/acompanhar"
             onClick={() => setOpen(false)}
             className="rounded-full border border-border px-5 py-3 text-center text-sm font-medium text-[#1c2b1a]"
           >
             Acompanhar ocorrência
-          </a>
-          <RegisterLink className="rounded-full bg-accent-5 py-3 text-center text-sm font-semibold text-white">
+          </Link>
+          <RegisterLink className="rounded-full bg-cta py-3 text-center text-sm font-semibold text-white">
             Registrar Ocorrência
           </RegisterLink>
         </div>
@@ -173,7 +174,7 @@ function Hero() {
       <div className="relative z-10 mx-auto w-full max-w-6xl px-5 pb-20 md:pb-28">
         <div className="max-w-2xl">
           <span
-            className="fade-up mb-6 inline-block rounded-full bg-accent px-3 py-1.5 text-xs font-semibold uppercase tracking-widest text-white"
+            className="fade-up mb-6 inline-block rounded-full bg-cta px-3 py-1.5 text-xs font-semibold uppercase tracking-widest text-white"
             style={{ fontFamily: 'var(--font-body)' }}
           >
             Proteção da Fauna Silvestre
@@ -195,7 +196,7 @@ function Hero() {
             nossa equipe entra em ação.
           </p>
           <div className="fade-up fade-up-delay-3 flex flex-col gap-4 sm:flex-row">
-            <RegisterLink className="inline-flex scale-100 items-center justify-center gap-2.5 rounded-full bg-accent px-8 py-4 text-base font-semibold text-white shadow-lg shadow-accent/30 transition-all duration-200 hover:bg-[#a84016] active:scale-95">
+            <RegisterLink className="inline-flex scale-100 items-center justify-center gap-2.5 rounded-full bg-cta px-8 py-4 text-base font-semibold text-white shadow-lg shadow-cta/30 transition-all duration-200 hover:bg-[#a84016] active:scale-95">
               <svg
                 className="h-5 w-5"
                 fill="none"
@@ -221,35 +222,56 @@ function Hero() {
           </div>
         </div>
       </div>
-      <div className="absolute inset-x-0 bottom-0 h-24 bg-linear-to-t from-background to-transparent" />
     </section>
   );
 }
 
-const stats = [
-  { value: '1.200+', label: 'Animais resgatados' },
-  { value: '47', label: 'Municípios atendidos' },
-  { value: '98%', label: 'Taxa de resposta em 24h' },
-  { value: '12', label: 'Equipes de campo' },
+const stats: { value: string; label: string; icon: LucideIcon }[] = [
+  { value: '1.200+', label: 'Animais resgatados', icon: PawPrint },
+  { value: '47', label: 'Municípios atendidos', icon: MapPin },
+  { value: '98%', label: 'Taxa de resposta em 24h', icon: Clock },
+  { value: '12', label: 'Equipes de campo', icon: Users },
 ];
 
 function Stats() {
   return (
-    <section className="bg-[#2d6a2f] py-14">
-      <div className="mx-auto grid max-w-6xl grid-cols-2 gap-8 px-5 text-center md:grid-cols-4">
-        {stats.map(({ value, label }) => (
-          <div key={label}>
-            <div
-              className="mb-1 text-4xl font-semibold text-white md:text-5xl"
-              style={{ fontFamily: 'var(--font-display)' }}
-            >
-              {value}
-            </div>
-            <div
-              className="text-sm font-medium text-[#a8d5a2]"
-              style={{ fontFamily: 'var(--font-body)' }}
-            >
-              {label}
+    <section
+      aria-label="O instituto em números"
+      className="relative overflow-hidden bg-[#2d6a2f]"
+    >
+      {/* Brilho suave e filete claro no topo para separar da foto da hero */}
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(168,213,162,0.18),transparent_60%)]" />
+      <div className="absolute inset-x-0 top-0 h-px bg-[#a8d5a2]/30" />
+
+      <div className="relative mx-auto grid max-w-6xl grid-cols-2 px-5 md:grid-cols-4">
+        {stats.map(({ value, label, icon: Icone }, i) => (
+          <div
+            key={label}
+            className={[
+              'flex flex-col items-center gap-3 px-3 py-8 text-center md:flex-row md:items-center md:gap-4 md:py-12 md:text-left',
+              // Linhas divisórias: grade 2x2 no celular, colunas no desktop
+              i % 2 === 1 ? 'border-l border-white/10' : '',
+              i >= 2 ? 'border-t border-white/10 md:border-t-0' : '',
+              i === 2 ? 'md:border-l' : '',
+              'md:justify-center',
+            ].join(' ')}
+          >
+            <span className="flex size-11 shrink-0 items-center justify-center rounded-full bg-white/10 text-[#a8d5a2] ring-1 ring-white/15 md:size-12">
+              <Icone className="size-5" aria-hidden />
+            </span>
+            <div>
+              <p
+                className="text-3xl leading-none text-white lining-nums md:text-4xl"
+                style={{ fontFamily: 'var(--font-display)' }}
+              >
+                {value}
+              </p>
+              <p
+                className="mt-1.5 text-xs font-medium tracking-wide text-balance text-[#c8e3c3] uppercase md:text-[0.7rem]"
+                style={{ fontFamily: 'var(--font-body)' }}
+              >
+                {label}
+              </p>
             </div>
           </div>
         ))}
@@ -540,7 +562,7 @@ function CTASection() {
           Não espere. Cada minuto conta. Registre a ocorrência agora e nossa
           equipe de resgate será acionada imediatamente.
         </p>
-        <RegisterLink className="mb-6 inline-flex scale-100 items-center gap-3 rounded-full bg-accent px-10 py-5 text-lg font-bold text-white shadow-2xl shadow-accent/40 transition-all duration-200 hover:bg-[#e06020] active:scale-95">
+        <RegisterLink className="mb-6 inline-flex scale-100 items-center gap-3 rounded-full bg-cta px-10 py-5 text-lg font-bold text-white shadow-2xl shadow-cta/40 transition-all duration-200 hover:bg-[#e06020] active:scale-95">
           <svg
             className="h-6 w-6"
             fill="none"
