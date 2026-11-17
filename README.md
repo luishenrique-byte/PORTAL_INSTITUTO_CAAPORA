@@ -43,13 +43,20 @@ os chamados de resgate em um só lugar, com registro padronizado e retorno para 
 
 ### Área interna (equipe do instituto)
 
-O backend já oferece as APIs; as telas do painel estão desenhadas no Figma e em desenvolvimento.
+Acesso em `/admin/login`. O menu mostra só o que o perfil pode usar (`COORDENADOR`, `ATENDENTE`, `EQUIPE_CAMPO`).
 
-- **Login** com JWT e perfis de acesso (`COORDENADOR`, `ATENDENTE`, `EQUIPE_CAMPO`)
-- **Ocorrências:** lista, filtros, cadastro manual (chamados por telefone), mudança de status e urgência, atribuição de equipe e histórico
-- **Dashboard:** totais, distribuição por status, categoria e mês, e **mapa de calor** das ocorrências
-- **Equipes e funcionários:** cadastro, disponibilidade e detalhes
-- **Relatórios** por período
+| Tela | Rota | Perfis | O que faz |
+|---|---|---|---|
+| Dashboard | `/admin` | coordenação, atendimento | Cards de indicadores, ocorrências por mês, tipos de animal, resgates por mês e status, com filtro de período |
+| Ocorrências | `/admin/ocorrencias` | todos | Fila em aberto (mais urgentes primeiro) e filtros por status, urgência, equipe e data |
+| Detalhe da ocorrência | `/admin/ocorrencias/[id]` | todos | Dados, fotos e histórico; avançar etapa, mudar urgência e designar equipe |
+| Nova ocorrência | `/admin/ocorrencias/nova` | coordenação, atendimento | Cadastro manual de chamados por telefone/WhatsApp |
+| Mapa de calor | `/admin/mapa` | coordenação, atendimento | Concentração das ocorrências com GPS, por período e urgência |
+| Equipes | `/admin/equipes` | todos | Situação, membros e atendimentos de cada equipe; coordenação cria e renomeia |
+| Relatórios | `/admin/relatorios` | coordenação, atendimento | Indicadores por período e equipe, com impressão e CSV |
+| Funcionários | `/admin/funcionarios` | coordenação | Cadastro, edição e desativação de acessos |
+
+Na primeira subida a API cria o coordenador inicial com `BOOTSTRAP_ADMIN_EMAIL` e `BOOTSTRAP_ADMIN_PASSWORD`.
 
 ### Como um resgate anda
 
@@ -65,7 +72,7 @@ consulta pelo protocolo.
 
 | Camada | Tecnologias |
 |---|---|
-| **Frontend** | Next.js 16 (App Router), React 19, TypeScript, Tailwind CSS 4, shadcn/ui (Radix), Lucide |
+| **Frontend** | Next.js 16 (App Router), React 19, TypeScript, Tailwind CSS 4, shadcn/ui (Radix), Lucide, Recharts, Leaflet |
 | **Backend** | Java 17, Spring Boot 4 (Web MVC, Data JPA, Validation, Security), JWT (JJWT), springdoc-openapi, Lombok |
 | **Banco de dados** | PostgreSQL 17 |
 | **Infraestrutura** | Docker, Docker Compose, Easypanel |
@@ -99,7 +106,7 @@ flowchart LR
 │       └── handler/          # tratamento global de erros
 ├── frontend/                 # site Next.js
 │   └── src/
-│       ├── app/              # páginas (/, /registrar, /acompanhar)
+│       ├── app/              # páginas (/, /registrar, /acompanhar, /admin)
 │       ├── components/ui/    # componentes shadcn/ui
 │       └── lib/              # cliente da API e utilitários
 ├── docker-compose.yml        # produção (Easypanel), sem portas publicadas
@@ -170,6 +177,7 @@ A documentação completa e interativa fica no **Swagger** (`/swagger-ui/index.h
 | `POST` | `/ocorrencias/publica/{protocolo}/midias` | público | Anexa outra foto ou vídeo enquanto a ocorrência está registrada (até 5 no total) |
 | `GET` | `/ocorrencias/rastreio/{protocolo}` | público | Consulta pública do andamento |
 | `POST` | `/auth/login` | público | Login da equipe, devolve o token JWT |
+| `GET` | `/auth/me` | equipe | Funcionário dono do token (id, perfil e equipe) |
 | `GET` | `/ocorrencias`, `/ocorrencias/filtro` | equipe | Lista e filtra ocorrências |
 | `PATCH` | `/ocorrencias/{id}/status`, `/urgencia`, `/equipe` | equipe | Atualiza o atendimento |
 | `GET` | `/dashboard/*` | atendente, coordenador | Indicadores e mapa de calor |
