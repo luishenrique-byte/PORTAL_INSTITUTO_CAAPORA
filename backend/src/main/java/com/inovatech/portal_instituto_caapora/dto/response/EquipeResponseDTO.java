@@ -6,6 +6,8 @@ import com.inovatech.portal_instituto_caapora.database.models.EquipeEntity;
 public record EquipeResponseDTO(
         Long id,
         String nome,
+        String regiao,
+        String telefone,
         EquipeStatus status
 ) {
     public static EquipeResponseDTO fromEntity(EquipeEntity equipe) {
@@ -13,6 +15,8 @@ public record EquipeResponseDTO(
         return new EquipeResponseDTO(
                 equipe.getId(),
                 equipe.getNome(),
+                equipe.getRegiao(),
+                equipe.getTelefone(),
                 equipe.getStatus()
         );
     }

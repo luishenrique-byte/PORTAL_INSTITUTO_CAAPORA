@@ -9,9 +9,12 @@ import java.util.List;
 public record EquipeDetalheResponseDTO(
         Long id,
         String nome,
+        String regiao,
+        String telefone,
         EquipeStatus status,
         List<FuncionarioResponseDTO> membros,
         List<OcorrenciaResponseDTO> resgatesEmAndamento,
-        List<OcorrenciaResponseDTO> historicoRecente
+        List<OcorrenciaResponseDTO> historicoRecente,
+        long totalConcluidos
 ) {
 }

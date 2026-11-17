@@ -11,8 +11,11 @@ import com.inovatech.portal_instituto_caapora.database.repository.FuncionarioRep
 import com.inovatech.portal_instituto_caapora.database.repository.OcorrenciaRepository;
 import com.inovatech.portal_instituto_caapora.dto.request.EquipeRequestDTO;
 import com.inovatech.portal_instituto_caapora.dto.response.EquipeDetalheResponseDTO;
+import com.inovatech.portal_instituto_caapora.dto.response.EquipeResponseDTO;
+import com.inovatech.portal_instituto_caapora.dto.response.EquipeResumoResponseDTO;
 import com.inovatech.portal_instituto_caapora.exception.RecursoNaoEncontradoException;
 import org.junit.jupiter.api.Test;
+import org.springframework.data.domain.Sort;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
@@ -43,10 +46,41 @@ class EquipeServiceTest {
     private final EquipeEntity alfa = EquipeEntity.builder().id(1L).nome("Alfa").status(EquipeStatus.OCUPADO).build();
 
     @Test
-    void equipeNovaComecaDisponivel() {
+    void equipeNovaComecaDisponivelEGuardaRegiaoETelefone() {
         when(equipeRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
-        assertEquals(EquipeStatus.DISPONIVEL, service.criar(new EquipeRequestDTO("Beta")).status());
+        EquipeResponseDTO nova = service.criar(
+                new EquipeRequestDTO("Beta", "Zona Norte – Salvador", "(71) 98001-0001"));
+
+        assertEquals(EquipeStatus.DISPONIVEL, nova.status());
+        assertEquals("Zona Norte – Salvador", nova.regiao());
+        assertEquals("(71) 98001-0001", nova.telefone());
+    }
+
+    @Test
+    void renomearTrocaSoONome() {
+        when(equipeRepository.findById(1L)).thenReturn(Optional.of(alfa));
+        when(equipeRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        EquipeResponseDTO renomeada = service.renomear(1L, new EquipeRequestDTO("Alfa 2", null, null));
+
+        assertEquals("Alfa 2", renomeada.nome());
+        assertEquals(EquipeStatus.OCUPADO, renomeada.status());
+    }
+
+    @Test
+    void resumoTrazAsContagensDeCadaEquipe() {
+        when(equipeRepository.findAll(Sort.by("id"))).thenReturn(List.of(alfa));
+        when(funcionarioRepository.countByEquipeIdAndAtivoTrue(1L)).thenReturn(4L);
+        when(ocorrenciaRepository.countByEquipeIdAndOcorrenciaStatusNot(1L, OcorrenciaStatus.CONCLUIDO)).thenReturn(2L);
+        when(ocorrenciaRepository.countByEquipeIdAndOcorrenciaStatus(1L, OcorrenciaStatus.CONCLUIDO)).thenReturn(15L);
+
+        EquipeResumoResponseDTO card = service.listarResumo().get(0);
+
+        assertEquals("Alfa", card.nome());
+        assertEquals(4, card.membros());
+        assertEquals(2, card.emCampo());
+        assertEquals(15, card.concluidos());
     }
 
     @Test
@@ -67,6 +101,7 @@ class EquipeServiceTest {
         assertEquals(1, detalhe.resgatesEmAndamento().size());
         assertEquals(10L, detalhe.resgatesEmAndamento().get(0).id());
         assertEquals(12L, detalhe.historicoRecente().get(0).id()); // mais recente primeiro
+        assertEquals(2, detalhe.totalConcluidos());
     }
 
     @Test
@@ -76,7 +111,10 @@ class EquipeServiceTest {
                 .mapToObj(i -> ocorrencia((long) i, OcorrenciaStatus.CONCLUIDO, LocalDateTime.now().minusDays(i)))
                 .toList());
 
-        assertEquals(10, service.detalhar(1L).historicoRecente().size());
+        EquipeDetalheResponseDTO detalhe = service.detalhar(1L);
+
+        assertEquals(10, detalhe.historicoRecente().size());
+        assertEquals(15, detalhe.totalConcluidos()); // o total conta todos, não só os 10 da lista
     }
 
     @Test

@@ -3,6 +3,7 @@ package com.inovatech.portal_instituto_caapora.controller;
 import com.inovatech.portal_instituto_caapora.dto.request.EquipeRequestDTO;
 import com.inovatech.portal_instituto_caapora.dto.response.EquipeDetalheResponseDTO;
 import com.inovatech.portal_instituto_caapora.dto.response.EquipeResponseDTO;
+import com.inovatech.portal_instituto_caapora.dto.response.EquipeResumoResponseDTO;
 import com.inovatech.portal_instituto_caapora.service.EquipeService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -19,7 +20,7 @@ public class EquipeController {
 
     private final EquipeService equipeService;
 
-    // POST /equipes   corpo: { "nome": "Alfa" }
+    // POST /equipes   corpo: { "nome": "Alfa", "regiao": "Zona Norte – Salvador", "telefone": "(71) 98001-0001" }
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public EquipeResponseDTO criar(@Valid @RequestBody EquipeRequestDTO dto) {
@@ -36,6 +37,13 @@ public class EquipeController {
     @GetMapping
     public List<EquipeResponseDTO> listar() {
         return equipeService.listar();
+    }
+
+    // Cards da tela "Equipes de Campo", já com membros, em campo e concluídos
+    // GET /equipes/resumo
+    @GetMapping("/resumo")
+    public List<EquipeResumoResponseDTO> listarResumo() {
+        return equipeService.listarResumo();
     }
 
     // Só as equipes livres (para escolher na hora de atribuir)
