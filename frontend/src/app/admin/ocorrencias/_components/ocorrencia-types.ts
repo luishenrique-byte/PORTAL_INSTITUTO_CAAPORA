@@ -1,74 +1,97 @@
-export type CategoriaAnimal = "AVE" | "MAMIFERO" | "REPTIL" | "ANFIBIO" | "OUTROS";
+﻿export type CategoriaAnimal =
+  | "AVE"
+  | "ANFIBIO"
+  | "MAMIFERO"
+  | "PEIXE"
+  | "REPTIL"
+  | "INDEFINIDO";
 
-export type CondicaoAnimal =
+export type SaudeStatus =
   | "FERIDO"
-  | "DEBILITADO"
+  | "DOENTE"
+  | "PRESO"
+  | "OBITO"
   | "ORFAO"
-  | "SAUDAVEL"
-  | "MORTO"
-  | "DESCONHECIDO";
+  | "INDEFINIDO";
 
 export type GrauUrgencia = "CRITICA" | "ALTA" | "MEDIA" | "BAIXA";
 
 export type OcorrenciaStatus =
-  | "ABERTA"
-  | "PENDENTE"
-  | "EM_ANDAMENTO"
-  | "RESGATADO"
-  | "CONCLUIDA"
-  | "CANCELADA";
+  | "REGISTRADA"
+  | "TRIAGEM"
+  | "ATENDIMENTO"
+  | "RESGATE"
+  | "CONCLUIDO";
 
 export interface HistoricoItem {
-  id?: number;
-  descricao?: string;
-  observacao?: string;
-  status?: string;
-  dataHora?: string;
-  responsavel?: string;
+  id: number;
+  statusMovimentacao: OcorrenciaStatus;
+  dataHora: string;
+  responsavelId?: number | null;
+  responsavelNome?: string | null;
 }
 
 export interface OcorrenciaAdmin {
   id: number;
   protocolo: string;
-  animal: {
-    nomePopular: string;
-    especie?: string;
-    categoria: CategoriaAnimal;
-    condicao: CondicaoAnimal;
-  };
-  localizacao: {
-    enderecoReferencia: string;
-    bairro: string;
-    municipio: string;
-    latitude?: number | null;
-    longitude?: number | null;
-  };
-  urgencia: GrauUrgencia;
-  status: OcorrenciaStatus;
-  equipeResponsavel?: {
+  dataHoraRegistro: string;
+  latitude?: number | null;
+  longitude?: number | null;
+  endereco?: string | null;
+  pontoReferencia?: string | null;
+  descricao?: string | null;
+  grauUrgencia: GrauUrgencia;
+  origemRegistro: "APP_PUBLICO" | "CADASTRO_MANUAL";
+  ocorrenciaStatus: OcorrenciaStatus;
+  reportante?: {
+    id?: number;
+    nome?: string | null;
+    telefone?: string | null;
+    anonimo?: boolean;
+  } | null;
+  animal?: {
+    id?: number;
+    especie?: string | null;
+    categoriaAnimal: CategoriaAnimal;
+    saudeStatus: SaudeStatus;
+  } | null;
+  equipe?: {
     id: number;
     nome: string;
   } | null;
-  comunicante?: {
-    nome?: string;
-    telefone?: string;
-  } | null;
-  quantidadeMidias: number;
-  dataAbertura: string;
-  dataAtualizacao?: string;
+  midias: {
+    id: number;
+    url?: string;
+    tipoMidia?: string;
+  }[];
   historico?: HistoricoItem[];
 }
 
-export interface NovaOcorrenciaPayload {
-  nomeAnimal: string;
-  categoriaAnimal: CategoriaAnimal;
-  condicaoAnimal: CondicaoAnimal;
-  enderecoReferencia: string;
-  bairro?: string;
-  municipio: string;
-  urgencia: GrauUrgencia;
-  nomeComunicante?: string;
-  telefoneComunicante?: string;
+export interface EquipeOption {
+  id: number;
+  nome: string;
+  status: "DISPONIVEL" | "OCUPADO";
+}
+
+// Payload exato exigido por POST /ocorrencias/manual (OcorrenciaRequestDTO)
+export interface OcorrenciaManualRequest {
+  latitude?: number | null;
+  longitude?: number | null;
+  endereco: string;
+  pontoReferencia?: string | null;
+  descricao?: string | null;
+  grauUrgencia: GrauUrgencia;
+  origemRegistro: "CADASTRO_MANUAL";
+  reportante?: {
+    nome?: string | null;
+    telefone?: string | null;
+    anonimo: boolean;
+  } | null;
+  animal: {
+    especie: string;
+    categoriaAnimal: CategoriaAnimal;
+    saudeStatus: SaudeStatus;
+  };
 }
 
 export const CATEGORIA_LABEL: Record<CategoriaAnimal, string> = {
@@ -76,16 +99,17 @@ export const CATEGORIA_LABEL: Record<CategoriaAnimal, string> = {
   MAMIFERO: "Mamífero",
   REPTIL: "Réptil",
   ANFIBIO: "Anfíbio",
-  OUTROS: "Outros",
+  PEIXE: "Peixe",
+  INDEFINIDO: "Outros",
 };
 
-export const CONDICAO_LABEL: Record<CondicaoAnimal, string> = {
+export const SAUDE_LABEL: Record<SaudeStatus, string> = {
   FERIDO: "Ferido",
-  DEBILITADO: "Debilitado",
+  DOENTE: "Debilitado / Doente",
   ORFAO: "Órfão",
-  SAUDAVEL: "Saudável",
-  MORTO: "Morto",
-  DESCONHECIDO: "Desconhecido",
+  PRESO: "Preso / Encurralado",
+  OBITO: "Morto",
+  INDEFINIDO: "Saudável / Desconhecido",
 };
 
 export const URGENCIA_CONFIG: Record<
@@ -118,37 +142,59 @@ export const URGENCIA_CONFIG: Record<
   },
 };
 
+export const STATUS_ORDEM: OcorrenciaStatus[] = [
+  "REGISTRADA",
+  "TRIAGEM",
+  "ATENDIMENTO",
+  "RESGATE",
+  "CONCLUIDO",
+];
+
 export const STATUS_CONFIG: Record<
-  string,
+  OcorrenciaStatus,
   { label: string; badgeClass: string }
 > = {
-  ABERTA: {
-    label: "Aberta",
+  REGISTRADA: {
+    label: "Registrada",
     badgeClass: "bg-blue-100 text-blue-800 border-blue-200",
   },
-  PENDENTE: {
-    label: "Pendente",
-    badgeClass: "bg-slate-100 text-slate-800 border-slate-300",
+  TRIAGEM: {
+    label: "Em Triagem",
+    badgeClass: "bg-amber-100 text-amber-800 border-amber-200",
   },
-  EM_ANDAMENTO: {
+  ATENDIMENTO: {
     label: "Em Atendimento",
     badgeClass: "bg-purple-100 text-purple-800 border-purple-200",
   },
-  RESGATADO: {
-    label: "Resgatado",
+  RESGATE: {
+    label: "Resgate em Campo",
     badgeClass: "bg-teal-100 text-teal-800 border-teal-200",
   },
-  CONCLUIDA: {
-    label: "Concluída",
+  CONCLUIDO: {
+    label: "Concluído",
     badgeClass: "bg-emerald-100 text-emerald-800 border-emerald-200",
-  },
-  CANCELADA: {
-    label: "Cancelada",
-    badgeClass: "bg-zinc-200 text-zinc-700 border-zinc-300",
   },
 };
 
-export function formatarDataHora(iso?: string): string {
+export function extrairLocalizacao(endereco?: string | null): {
+  bairro: string;
+  municipio: string;
+} {
+  if (!endereco) return { bairro: "Não informado", municipio: "Não informado" };
+  const partes = endereco
+    .split(/[-–,]/)
+    .map((p) => p.trim())
+    .filter(Boolean);
+  if (partes.length >= 2) {
+    return {
+      bairro: partes[partes.length - 2],
+      municipio: partes[partes.length - 1],
+    };
+  }
+  return { bairro: "Não informado", municipio: partes[0] || "Não informado" };
+}
+
+export function formatarDataHora(iso?: string | null): string {
   if (!iso) return "—";
   try {
     return new Intl.DateTimeFormat("pt-BR", {

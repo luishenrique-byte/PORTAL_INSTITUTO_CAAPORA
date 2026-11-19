@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import React, { useState } from "react";
 import {
@@ -11,43 +11,47 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import {
   CategoriaAnimal,
-  CondicaoAnimal,
+  SaudeStatus,
   GrauUrgencia,
-  NovaOcorrenciaPayload,
-  CATEGORIA_LABEL,
-  CONDICAO_LABEL,
+  OcorrenciaManualRequest,
   URGENCIA_CONFIG,
 } from "./ocorrencia-types";
 
 interface Props {
   open: boolean;
   onClose: () => void;
-  onSalvar: (dados: NovaOcorrenciaPayload) => Promise<void>;
+  onSalvar: (dados: OcorrenciaManualRequest) => Promise<boolean>;
 }
 
-const MUNICIPIOS_PADRAO = [
-  "Salvador",
-  "Lauro de Freitas",
-  "Camaçari",
-  "Simões Filho",
-  "Dias d'Ávila",
-  "Mata de São João",
-  "Candeias",
-  "Vera Cruz",
-  "Itaparica",
-  "Outro",
+const TIPOS_ANIMAL: { value: CategoriaAnimal; label: string }[] = [
+  { value: "AVE", label: "Aves" },
+  { value: "MAMIFERO", label: "Mamíferos" },
+  { value: "REPTIL", label: "Répteis" },
+  { value: "ANFIBIO", label: "Anfíbios" },
+  { value: "INDEFINIDO", label: "Outros" },
+];
+
+const CONDICOES_ANIMAL: { value: SaudeStatus; label: string }[] = [
+  { value: "FERIDO", label: "Ferido" },
+  { value: "DOENTE", label: "Debilitado" },
+  { value: "ORFAO", label: "Órfão" },
+  { value: "INDEFINIDO", label: "Saudável / Desconhecido" },
+  { value: "OBITO", label: "Morto" },
+  { value: "PRESO", label: "Preso / Encurralado" },
 ];
 
 export function ModalCadastroOcorrencia({ open, onClose, onSalvar }: Props) {
-  const [nomeAnimal, setNomeAnimal] = useState("");
+  const [especie, setEspecie] = useState("");
   const [categoriaAnimal, setCategoriaAnimal] = useState<CategoriaAnimal>("AVE");
-  const [condicaoAnimal, setCondicaoAnimal] = useState<CondicaoAnimal>("FERIDO");
-  const [enderecoReferencia, setEnderecoReferencia] = useState("");
+  const [saudeStatus, setSaudeStatus] = useState<SaudeStatus>("FERIDO");
+  const [endereco, setEndereco] = useState("");
   const [bairro, setBairro] = useState("");
-  const [municipio, setMunicipio] = useState("Salvador");
-  const [urgencia, setUrgencia] = useState<GrauUrgencia>("MEDIA");
+  const [municipio, setMunicipio] = useState("");
+  const [descricao, setDescricao] = useState("");
+  const [grauUrgencia, setGrauUrgencia] = useState<GrauUrgencia>("MEDIA");
   const [nomeComunicante, setNomeComunicante] = useState("");
   const [telefoneComunicante, setTelefoneComunicante] = useState("");
   const [erros, setErros] = useState<Record<string, string>>({});
@@ -55,27 +59,25 @@ export function ModalCadastroOcorrencia({ open, onClose, onSalvar }: Props) {
 
   function validar(): boolean {
     const novosErros: Record<string, string> = {};
-    if (!nomeAnimal.trim()) {
-      novosErros.nomeAnimal = "Informe o nome ou espécie do animal.";
+    if (!especie.trim()) {
+      novosErros.especie = "Informe o nome ou espécie do animal.";
     }
-    if (!enderecoReferencia.trim()) {
-      novosErros.enderecoReferencia = "Informe o endereço ou ponto de referência.";
-    }
-    if (!municipio.trim()) {
-      novosErros.municipio = "Selecione o município.";
+    if (!endereco.trim()) {
+      novosErros.endereco = "Informe o endereço ou ponto de referência.";
     }
     setErros(novosErros);
     return Object.keys(novosErros).length === 0;
   }
 
   function limparFormulario() {
-    setNomeAnimal("");
+    setEspecie("");
     setCategoriaAnimal("AVE");
-    setCondicaoAnimal("FERIDO");
-    setEnderecoReferencia("");
+    setSaudeStatus("FERIDO");
+    setEndereco("");
     setBairro("");
-    setMunicipio("Salvador");
-    setUrgencia("MEDIA");
+    setMunicipio("");
+    setDescricao("");
+    setGrauUrgencia("MEDIA");
     setNomeComunicante("");
     setTelefoneComunicante("");
     setErros({});
@@ -85,21 +87,38 @@ export function ModalCadastroOcorrencia({ open, onClose, onSalvar }: Props) {
     e.preventDefault();
     if (!validar()) return;
 
+    const enderecoCompleto = [endereco.trim(), bairro.trim(), municipio.trim()]
+      .filter(Boolean)
+      .join(", ");
+
+    const temComunicante = Boolean(nomeComunicante.trim() || telefoneComunicante.trim());
+
+    const payload: OcorrenciaManualRequest = {
+      endereco: enderecoCompleto,
+      descricao: descricao.trim() || null,
+      grauUrgencia,
+      origemRegistro: "CADASTRO_MANUAL",
+      reportante: temComunicante
+        ? {
+            nome: nomeComunicante.trim() || null,
+            telefone: telefoneComunicante.trim() || null,
+            anonimo: false,
+          }
+        : null,
+      animal: {
+        especie: especie.trim(),
+        categoriaAnimal,
+        saudeStatus,
+      },
+    };
+
     setSalvando(true);
     try {
-      await onSalvar({
-        nomeAnimal: nomeAnimal.trim(),
-        categoriaAnimal,
-        condicaoAnimal,
-        enderecoReferencia: enderecoReferencia.trim(),
-        bairro: bairro.trim() || undefined,
-        municipio,
-        urgencia,
-        nomeComunicante: nomeComunicante.trim() || undefined,
-        telefoneComunicante: telefoneComunicante.trim() || undefined,
-      });
-      limparFormulario();
-      onClose();
+      const sucesso = await onSalvar(payload);
+      if (sucesso) {
+        limparFormulario();
+        onClose();
+      }
     } finally {
       setSalvando(false);
     }
@@ -118,30 +137,29 @@ export function ModalCadastroOcorrencia({ open, onClose, onSalvar }: Props) {
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="text-xl font-bold text-slate-900">
-            Registrar Nova Ocorrência
+            Cadastro Manual de Ocorrência
           </DialogTitle>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-5 py-2">
-          {/* A. Informações do animal */}
           <fieldset className="space-y-3 border border-slate-200 rounded-lg p-4">
             <legend className="text-sm font-semibold text-emerald-800 px-1">
               A. Informações do Animal
             </legend>
 
             <div>
-              <Label htmlFor="nomeAnimal">
+              <Label htmlFor="especie">
                 Nome ou espécie <span className="text-red-600">*</span>
               </Label>
               <Input
-                id="nomeAnimal"
+                id="especie"
                 placeholder="Ex: Coruja-buraqueira, Sagui, Jiboia..."
-                value={nomeAnimal}
-                onChange={(e) => setNomeAnimal(e.target.value)}
-                className={erros.nomeAnimal ? "border-red-500" : ""}
+                value={especie}
+                onChange={(e) => setEspecie(e.target.value)}
+                className={erros.especie ? "border-red-500" : ""}
               />
-              {erros.nomeAnimal && (
-                <p className="text-xs text-red-600 mt-1">{erros.nomeAnimal}</p>
+              {erros.especie && (
+                <p className="text-xs text-red-600 mt-1">{erros.especie}</p>
               )}
             </div>
 
@@ -154,25 +172,25 @@ export function ModalCadastroOcorrencia({ open, onClose, onSalvar }: Props) {
                   onChange={(e) => setCategoriaAnimal(e.target.value as CategoriaAnimal)}
                   className="mt-1 w-full h-9 rounded-md border border-slate-300 bg-white px-3 text-sm"
                 >
-                  {(Object.keys(CATEGORIA_LABEL) as CategoriaAnimal[]).map((cat) => (
-                    <option key={cat} value={cat}>
-                      {CATEGORIA_LABEL[cat]}
+                  {TIPOS_ANIMAL.map((item) => (
+                    <option key={item.value} value={item.value}>
+                      {item.label}
                     </option>
                   ))}
                 </select>
               </div>
 
               <div>
-                <Label htmlFor="condicaoAnimal">Condição do animal</Label>
+                <Label htmlFor="saudeStatus">Condição do animal</Label>
                 <select
-                  id="condicaoAnimal"
-                  value={condicaoAnimal}
-                  onChange={(e) => setCondicaoAnimal(e.target.value as CondicaoAnimal)}
+                  id="saudeStatus"
+                  value={saudeStatus}
+                  onChange={(e) => setSaudeStatus(e.target.value as SaudeStatus)}
                   className="mt-1 w-full h-9 rounded-md border border-slate-300 bg-white px-3 text-sm"
                 >
-                  {(Object.keys(CONDICAO_LABEL) as CondicaoAnimal[]).map((cond) => (
-                    <option key={cond} value={cond}>
-                      {CONDICAO_LABEL[cond]}
+                  {CONDICOES_ANIMAL.map((item) => (
+                    <option key={item.value} value={item.value}>
+                      {item.label}
                     </option>
                   ))}
                 </select>
@@ -180,25 +198,24 @@ export function ModalCadastroOcorrencia({ open, onClose, onSalvar }: Props) {
             </div>
           </fieldset>
 
-          {/* B. Localização */}
           <fieldset className="space-y-3 border border-slate-200 rounded-lg p-4">
             <legend className="text-sm font-semibold text-emerald-800 px-1">
               B. Localização
             </legend>
 
             <div>
-              <Label htmlFor="enderecoReferencia">
+              <Label htmlFor="endereco">
                 Endereço ou ponto de referência <span className="text-red-600">*</span>
               </Label>
               <Input
-                id="enderecoReferencia"
-                placeholder="Ex: Rua das Acácias, nº 120, próximo à praça central"
-                value={enderecoReferencia}
-                onChange={(e) => setEnderecoReferencia(e.target.value)}
-                className={erros.enderecoReferencia ? "border-red-500" : ""}
+                id="endereco"
+                placeholder="Ex: Rua das Acácias, 120 - Próximo à praça"
+                value={endereco}
+                onChange={(e) => setEndereco(e.target.value)}
+                className={erros.endereco ? "border-red-500" : ""}
               />
-              {erros.enderecoReferencia && (
-                <p className="text-xs text-red-600 mt-1">{erros.enderecoReferencia}</p>
+              {erros.endereco && (
+                <p className="text-xs text-red-600 mt-1">{erros.endereco}</p>
               )}
             </div>
 
@@ -212,42 +229,42 @@ export function ModalCadastroOcorrencia({ open, onClose, onSalvar }: Props) {
                   onChange={(e) => setBairro(e.target.value)}
                 />
               </div>
-
               <div>
-                <Label htmlFor="municipio">
-                  Município <span className="text-red-600">*</span>
-                </Label>
-                <select
+                <Label htmlFor="municipio">Município</Label>
+                <Input
                   id="municipio"
+                  placeholder="Ex: Salvador"
                   value={municipio}
                   onChange={(e) => setMunicipio(e.target.value)}
-                  className="mt-1 w-full h-9 rounded-md border border-slate-300 bg-white px-3 text-sm"
-                >
-                  {MUNICIPIOS_PADRAO.map((m) => (
-                    <option key={m} value={m}>
-                      {m}
-                    </option>
-                  ))}
-                </select>
+                />
               </div>
+            </div>
+
+            <div>
+              <Label htmlFor="descricao">Observações adicionais</Label>
+              <Textarea
+                id="descricao"
+                rows={2}
+                placeholder="Detalhes relatados no atendimento..."
+                value={descricao}
+                onChange={(e) => setDescricao(e.target.value)}
+              />
             </div>
           </fieldset>
 
-          {/* C. Classificação da urgência */}
           <fieldset className="space-y-2 border border-slate-200 rounded-lg p-4">
             <legend className="text-sm font-semibold text-emerald-800 px-1">
               C. Classificação da Urgência
             </legend>
-
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 pt-1">
               {(Object.keys(URGENCIA_CONFIG) as GrauUrgencia[]).map((nivel) => {
                 const cfg = URGENCIA_CONFIG[nivel];
-                const selecionado = urgencia === nivel;
+                const selecionado = grauUrgencia === nivel;
                 return (
                   <button
                     key={nivel}
                     type="button"
-                    onClick={() => setUrgencia(nivel)}
+                    onClick={() => setGrauUrgencia(nivel)}
                     className={`flex items-center justify-center gap-2 py-2.5 px-3 rounded-lg border text-sm font-medium transition-all ${
                       selecionado
                         ? `${cfg.badgeClass} ring-2 ring-offset-1 ring-slate-400 font-semibold`
@@ -262,15 +279,13 @@ export function ModalCadastroOcorrencia({ open, onClose, onSalvar }: Props) {
             </div>
           </fieldset>
 
-          {/* D. Dados do comunicante */}
           <fieldset className="space-y-3 border border-slate-200 rounded-lg p-4">
             <legend className="text-sm font-semibold text-emerald-800 px-1">
-              D. Dados do Comunicante (opcional)
+              D. Dados do Comunicante (opcionais)
             </legend>
-
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="nomeComunicante">Nome do comunicante</Label>
+                <Label htmlFor="nomeComunicante">Nome</Label>
                 <Input
                   id="nomeComunicante"
                   placeholder="Nome completo"
@@ -279,7 +294,7 @@ export function ModalCadastroOcorrencia({ open, onClose, onSalvar }: Props) {
                 />
               </div>
               <div>
-                <Label htmlFor="telefoneComunicante">Telefone para contato</Label>
+                <Label htmlFor="telefoneComunicante">Telefone</Label>
                 <Input
                   id="telefoneComunicante"
                   placeholder="(71) 99999-9999"
@@ -290,7 +305,6 @@ export function ModalCadastroOcorrencia({ open, onClose, onSalvar }: Props) {
             </div>
           </fieldset>
 
-          {/* E. Ações */}
           <DialogFooter className="gap-2 pt-2">
             <Button
               type="button"
