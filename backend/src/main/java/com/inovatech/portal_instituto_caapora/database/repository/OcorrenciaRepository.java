@@ -28,6 +28,11 @@ public interface OcorrenciaRepository extends JpaRepository<OcorrenciaEntity, Lo
 
     List<OcorrenciaEntity> findByEquipeId(Long equipeId);
 
+    // Contagens por equipe: em andamento (status diferente de CONCLUIDO) e concluídas
+    long countByEquipeIdAndOcorrenciaStatusNot(Long equipeId, OcorrenciaStatus status);
+
+    long countByEquipeIdAndOcorrenciaStatus(Long equipeId, OcorrenciaStatus status);
+
     // Filtro por período para relatórios (RF15)
     List<OcorrenciaEntity> findByDataHoraRegistroBetween(LocalDateTime inicio, LocalDateTime fim);
 }

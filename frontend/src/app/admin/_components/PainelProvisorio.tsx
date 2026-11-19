@@ -1,6 +1,7 @@
 'use client';
 
-import { LogOut } from 'lucide-react';
+import { LogOut, Users } from 'lucide-react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
@@ -40,6 +41,11 @@ export default function PainelProvisorio() {
       <p className="max-w-sm text-sm text-muted-foreground">
         Você está conectado. O dashboard ainda está em construção.
       </p>
+      <Button asChild>
+        <Link href="/admin/equipes">
+          <Users /> Equipes de Campo
+        </Link>
+      </Button>
       <Button variant="outline" onClick={sair}>
         <LogOut /> Sair
       </Button>

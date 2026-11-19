@@ -147,3 +147,77 @@ export async function entrar(email: string, senha: string) {
     throw e;
   }
 }
+
+// ---------- Equipes de campo (painel) ----------
+
+export type EquipeStatus = 'DISPONIVEL' | 'OCUPADO';
+
+// GET /equipes/resumo: um item por card da tela "Equipes de Campo"
+export interface EquipeResumo {
+  id: number;
+  nome: string;
+  regiao: string | null;
+  telefone: string | null;
+  status: EquipeStatus;
+  membros: number;
+  emCampo: number; // ocorrências em andamento
+  concluidos: number;
+}
+
+// Ocorrência como o painel interno recebe (OcorrenciaResponseDTO), só com o que a tela usa
+export interface OcorrenciaInterna {
+  id: number;
+  protocolo: string;
+  dataHoraRegistro: string;
+  endereco: string | null;
+  pontoReferencia: string | null;
+  ocorrenciaStatus: OcorrenciaStatus;
+  animal: { especie: string | null; categoriaAnimal: CategoriaAnimal } | null;
+}
+
+// GET /equipes/{id}/detalhe: modal da equipe
+export interface EquipeDetalhe {
+  id: number;
+  nome: string;
+  regiao: string | null;
+  telefone: string | null;
+  status: EquipeStatus;
+  membros: { id: number; nome: string }[];
+  resgatesEmAndamento: OcorrenciaInterna[];
+  historicoRecente: OcorrenciaInterna[]; // os últimos concluídos
+  totalConcluidos: number;
+}
+
+export interface NovaEquipeRequest {
+  nome: string;
+  regiao?: string | null;
+  telefone?: string | null;
+}
+
+// As rotas do painel exigem o token do login no header Authorization
+const comToken = (token: string) => ({ Authorization: `Bearer ${token}` });
+
+export function listarEquipesResumo(token: string, signal?: AbortSignal) {
+  return requisitar<EquipeResumo[]>('/equipes/resumo', {
+    headers: comToken(token),
+    cache: 'no-store',
+    signal,
+  });
+}
+
+export function detalharEquipe(id: number, token: string, signal?: AbortSignal) {
+  return requisitar<EquipeDetalhe>(`/equipes/${id}/detalhe`, {
+    headers: comToken(token),
+    cache: 'no-store',
+    signal,
+  });
+}
+
+// Só o COORDENADOR pode criar (o backend responde 403 para os outros perfis)
+export function criarEquipe(dados: NovaEquipeRequest, token: string) {
+  return requisitar<EquipeResumo>('/equipes', {
+    method: 'POST',
+    headers: { ...comToken(token), 'Content-Type': 'application/json' },
+    body: JSON.stringify(dados),
+  });
+}

@@ -25,6 +25,13 @@ public class EquipeEntity {
     @Column(nullable = false, name = "status")
     private EquipeStatus status;
 
+    // Área de atuação da equipe (ex: "Zona Norte – Salvador")
+    @Column(name = "regiao")
+    private String regiao;
+
+    @Column(name = "telefone")
+    private String telefone;
+
     @OneToMany(mappedBy = "equipe")
     private Set<FuncionarioEntity> funcionarios;
 

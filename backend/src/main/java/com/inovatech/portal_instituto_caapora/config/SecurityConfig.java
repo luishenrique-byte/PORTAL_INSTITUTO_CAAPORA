@@ -7,6 +7,7 @@ import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
+import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
@@ -27,6 +28,9 @@ public class SecurityConfig {
     public SecurityFilterChain securityFilterChain(HttpSecurity http){
         return http
                 .csrf(c -> c.disable())
+                // Aplica as regras do CorsConfig também na segurança. Sem isso, o navegador
+                // é barrado (401) antes de qualquer chamada com token vinda do frontend.
+                .cors(Customizer.withDefaults())
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .exceptionHandling(ex -> ex
                         .authenticationEntryPoint(new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED))
@@ -55,7 +59,7 @@ public class SecurityConfig {
                     .requestMatchers("/funcionarios/**").hasAuthority("COORDENADOR")
                     .requestMatchers("/perfis/**").hasAuthority("COORDENADOR")
                     .requestMatchers(HttpMethod.POST,"/equipes").hasAuthority("COORDENADOR")
-                    .requestMatchers(HttpMethod.PUT,"/equipes").hasAuthority("COORDENADOR")
+                    .requestMatchers(HttpMethod.PUT,"/equipes/*").hasAuthority("COORDENADOR")
 
                     // ==========================================
                     // 3. ATENDENTE + COORDENADOR

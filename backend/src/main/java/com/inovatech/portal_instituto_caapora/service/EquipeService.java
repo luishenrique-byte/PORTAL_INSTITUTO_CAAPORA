@@ -10,10 +10,12 @@ import com.inovatech.portal_instituto_caapora.database.repository.OcorrenciaRepo
 import com.inovatech.portal_instituto_caapora.dto.request.EquipeRequestDTO;
 import com.inovatech.portal_instituto_caapora.dto.response.EquipeDetalheResponseDTO;
 import com.inovatech.portal_instituto_caapora.dto.response.EquipeResponseDTO;
+import com.inovatech.portal_instituto_caapora.dto.response.EquipeResumoResponseDTO;
 import com.inovatech.portal_instituto_caapora.dto.response.FuncionarioResponseDTO;
 import com.inovatech.portal_instituto_caapora.dto.response.OcorrenciaResponseDTO;
 import com.inovatech.portal_instituto_caapora.exception.RecursoNaoEncontradoException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -37,6 +39,8 @@ public class EquipeService {
     public EquipeResponseDTO criar(EquipeRequestDTO dto) {
         EquipeEntity equipe = EquipeEntity.builder()
                 .nome(dto.nome())
+                .regiao(dto.regiao())
+                .telefone(dto.telefone())
                 .status(EquipeStatus.DISPONIVEL)
                 .build();
         return EquipeResponseDTO.fromEntity(equipeRepository.save(equipe));
@@ -62,6 +66,24 @@ public class EquipeService {
                 .toList();
     }
 
+    // Cards da tela "Equipes de Campo": cada equipe com membros ativos,
+    // ocorrências em andamento ("em campo") e atendimentos concluídos.
+    // Ordenadas por cadastro, para os cards não trocarem de lugar a cada atualização.
+    @Transactional(readOnly = true)
+    public List<EquipeResumoResponseDTO> listarResumo() {
+        return equipeRepository.findAll(Sort.by("id")).stream()
+                .map(e -> new EquipeResumoResponseDTO(
+                        e.getId(),
+                        e.getNome(),
+                        e.getRegiao(),
+                        e.getTelefone(),
+                        e.getStatus(),
+                        funcionarioRepository.countByEquipeIdAndAtivoTrue(e.getId()),
+                        ocorrenciaRepository.countByEquipeIdAndOcorrenciaStatusNot(e.getId(), OcorrenciaStatus.CONCLUIDO),
+                        ocorrenciaRepository.countByEquipeIdAndOcorrenciaStatus(e.getId(), OcorrenciaStatus.CONCLUIDO)))
+                .toList();
+    }
+
     @Transactional(readOnly = true)
     public EquipeResponseDTO buscarPorId(Long id) {
         return EquipeResponseDTO.fromEntity(buscarEntidade(id));
@@ -83,15 +105,18 @@ public class EquipeService {
                 .filter(o -> o.getOcorrenciaStatus() != OcorrenciaStatus.CONCLUIDO)
                 .map(OcorrenciaResponseDTO::fromEntity)
                 .toList();
-        List<OcorrenciaResponseDTO> historicoRecente = ocorrencias.stream()
+        List<OcorrenciaEntity> concluidas = ocorrencias.stream()
                 .filter(o -> o.getOcorrenciaStatus() == OcorrenciaStatus.CONCLUIDO)
+                .toList();
+        List<OcorrenciaResponseDTO> historicoRecente = concluidas.stream()
                 .sorted(Comparator.comparing(OcorrenciaEntity::getDataHoraRegistro).reversed())
                 .limit(LIMITE_HISTORICO)
                 .map(OcorrenciaResponseDTO::fromEntity)
                 .toList();
 
-        return new EquipeDetalheResponseDTO(equipe.getId(), equipe.getNome(), equipe.getStatus(),
-                membros, emAndamento, historicoRecente);
+        return new EquipeDetalheResponseDTO(equipe.getId(), equipe.getNome(), equipe.getRegiao(),
+                equipe.getTelefone(), equipe.getStatus(), membros, emAndamento, historicoRecente,
+                concluidas.size());
     }
 
     EquipeEntity buscarEntidade(Long id) {

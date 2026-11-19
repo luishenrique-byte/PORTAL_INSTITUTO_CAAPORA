@@ -18,4 +18,7 @@ public interface FuncionarioRepository extends JpaRepository<FuncionarioEntity, 
     List<FuncionarioEntity> findByAtivoTrue();
 
     List<FuncionarioEntity> findByEquipeId(Long equipeId);
+
+    // Quantidade de membros ativos da equipe (card da tela "Equipes de Campo")
+    long countByEquipeIdAndAtivoTrue(Long equipeId);
 }
