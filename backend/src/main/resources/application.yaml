@@ -30,4 +30,5 @@ app:
     admin:
       nome: ${BOOTSTRAP_ADMIN_NAME:Admin}
       email: ${BOOTSTRAP_ADMIN_EMAIL:admin@institutocaapora.com.br}
-      senha: ${BOOTSTRAP_ADMIN_PASSWORD}
+      # Sem senha, a API sobe mas não cria o coordenador inicial
+      senha: ${BOOTSTRAP_ADMIN_PASSWORD:}

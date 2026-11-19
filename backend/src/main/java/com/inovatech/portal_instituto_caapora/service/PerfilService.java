@@ -28,6 +28,14 @@ public class PerfilService {
         return PerfilResponseDTO.fromEntity(perfilRepository.save(dto.toEntity()));
     }
 
+    // Cria o perfil só se ainda não existir (usado na inicialização, que roda a cada subida da API)
+    @Transactional
+    public PerfilResponseDTO garantir(String nome) {
+        return perfilRepository.findByPerfil(nome)
+                .map(PerfilResponseDTO::fromEntity)
+                .orElseGet(() -> criar(new PerfilRequestDTO(nome)));
+    }
+
     @Transactional(readOnly = true)
     public List<PerfilResponseDTO> listar() {
         return perfilRepository.findAll().stream().map(PerfilResponseDTO::fromEntity).toList();
