@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { Check, Lock, MapPin, Plus, X } from 'lucide-react';
+import { Camera, Check, CircleAlert, Lock, MapPin, Plus, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
@@ -176,12 +176,33 @@ const ESTADOS_SAUDE: { valor: SaudeStatus; rotulo: string; cor: string }[] = [
   { valor: 'INDEFINIDO', rotulo: 'Não sei avaliar', cor: 'bg-muted-foreground/60' },
 ];
 
-export function PassoAnimal({ dados, atualizar }: { dados: DadosFormulario; atualizar: Atualizar }) {
+// Mensagem de campo obrigatório que ficou faltando (aparece depois de clicar em Continuar)
+function AvisoCampo({ children }: { children: React.ReactNode }) {
+  return (
+    <p role="alert" className="mt-2 flex items-center gap-1.5 text-xs font-medium text-destructive">
+      <CircleAlert className="size-3.5 shrink-0" aria-hidden />
+      {children}
+    </p>
+  );
+}
+
+export function PassoAnimal({
+  dados,
+  atualizar,
+  mostrarErros = false,
+}: {
+  dados: DadosFormulario;
+  atualizar: Atualizar;
+  mostrarErros?: boolean;
+}) {
+  const faltaCategoria = mostrarErros && dados.categoria === null;
+  const faltaSaude = mostrarErros && dados.saude === null;
+  const faltaFoto = mostrarErros && !temFoto(dados.arquivos);
   return (
     <>
       <Titulo titulo="Detalhes do animal" subtitulo="Não se preocupe se não souber o nome da espécie." />
 
-      <p id="rotulo-tipo" className="mb-2 text-sm font-semibold text-foreground">
+      <p id="rotulo-tipo" data-pendente={faltaCategoria || undefined} className="mb-2 text-sm font-semibold text-foreground">
         Tipo de animal
       </p>
       <ToggleGroup
@@ -201,6 +222,7 @@ export function PassoAnimal({ dados, atualizar }: { dados: DadosFormulario; atua
           </ToggleGroupItem>
         ))}
       </ToggleGroup>
+      {faltaCategoria && <AvisoCampo>Selecione o tipo de animal.</AvisoCampo>}
 
       {dados.categoria && dados.categoria !== 'INDEFINIDO' && (
         <Input
@@ -213,7 +235,7 @@ export function PassoAnimal({ dados, atualizar }: { dados: DadosFormulario; atua
         />
       )}
 
-      <p id="rotulo-saude" className="mt-7 mb-2 text-sm font-semibold text-foreground">
+      <p id="rotulo-saude" data-pendente={faltaSaude || undefined} className="mt-7 mb-2 text-sm font-semibold text-foreground">
         Estado de saúde aparente
       </p>
       <ToggleGroup
@@ -236,6 +258,7 @@ export function PassoAnimal({ dados, atualizar }: { dados: DadosFormulario; atua
           </ToggleGroupItem>
         ))}
       </ToggleGroup>
+      {faltaSaude && <AvisoCampo>Selecione o estado de saúde do animal.</AvisoCampo>}
 
       <div className="mt-7">
         <Rotulo htmlFor="descricao" opcional>
@@ -252,7 +275,11 @@ export function PassoAnimal({ dados, atualizar }: { dados: DadosFormulario; atua
         />
       </div>
 
-      <SeletorArquivos arquivos={dados.arquivos} onChange={(arquivos) => atualizar({ arquivos })} />
+      <SeletorArquivos
+        arquivos={dados.arquivos}
+        onChange={(arquivos) => atualizar({ arquivos })}
+        faltaFoto={faltaFoto}
+      />
     </>
   );
 }
@@ -262,7 +289,15 @@ export const temFoto = (arquivos: File[]) => arquivos.some((f) => f.type.startsW
 export const passo2Valido = (d: DadosFormulario) =>
   d.categoria !== null && d.saude !== null && temFoto(d.arquivos);
 
-function SeletorArquivos({ arquivos, onChange }: { arquivos: File[]; onChange: (a: File[]) => void }) {
+function SeletorArquivos({
+  arquivos,
+  onChange,
+  faltaFoto,
+}: {
+  arquivos: File[];
+  onChange: (a: File[]) => void;
+  faltaFoto: boolean;
+}) {
   const input = useRef<HTMLInputElement>(null);
   const [aviso, setAviso] = useState('');
 
@@ -283,12 +318,14 @@ function SeletorArquivos({ arquivos, onChange }: { arquivos: File[]; onChange: (
   }
 
   return (
-    <div className="mt-7">
-      <p className="mb-2 text-sm font-semibold text-foreground">
-        Fotos ou vídeos{' '}
-        <span className="font-normal text-muted-foreground">
-          (pelo menos 1 foto · até {MIDIA_MAX_ARQUIVOS} arquivos)
-        </span>
+    <div className="mt-7" data-pendente={faltaFoto || undefined}>
+      <p className="text-sm font-semibold text-foreground">
+        Fotos ou vídeos <span className="text-destructive" aria-hidden>*</span>
+        <span className="sr-only"> (obrigatório)</span>
+      </p>
+      <p className="mt-0.5 mb-2.5 flex items-center gap-1.5 text-xs text-muted-foreground">
+        <Camera className="size-3.5 shrink-0" aria-hidden />
+        Obrigatório pelo menos 1 foto do animal · até {MIDIA_MAX_ARQUIVOS} arquivos
       </p>
       <div className="flex flex-wrap gap-2.5">
         {arquivos.map((f, i) => (
@@ -303,7 +340,10 @@ function SeletorArquivos({ arquivos, onChange }: { arquivos: File[]; onChange: (
             type="button"
             variant="outline"
             onClick={() => input.current?.click()}
-            className="size-[72px] flex-col gap-0.5 rounded-xl bg-card font-normal text-muted-foreground hover:border-primary/50 hover:bg-card"
+            className={cn(
+              'size-[72px] flex-col gap-0.5 rounded-xl bg-card font-normal text-muted-foreground hover:border-primary/50 hover:bg-card',
+              faltaFoto && 'border-2 border-dashed border-destructive bg-destructive/5 text-destructive hover:border-destructive',
+            )}
           >
             <Plus className="size-5" />
             <span className="text-[0.7rem]">Adicionar</span>
@@ -325,8 +365,12 @@ function SeletorArquivos({ arquivos, onChange }: { arquivos: File[]; onChange: (
           {aviso}
         </p>
       )}
-      {arquivos.length > 0 && !temFoto(arquivos) && (
-        <p className="mt-2 text-xs text-destructive">Adicione pelo menos uma foto do animal.</p>
+      {(faltaFoto || (arquivos.length > 0 && !temFoto(arquivos))) && (
+        <AvisoCampo>
+          {arquivos.length > 0
+            ? 'Vídeos são bem-vindos, mas adicione também pelo menos uma foto do animal.'
+            : 'Adicione pelo menos uma foto do animal para continuar.'}
+        </AvisoCampo>
       )}
     </div>
   );
