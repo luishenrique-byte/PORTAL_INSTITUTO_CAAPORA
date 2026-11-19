@@ -221,3 +221,55 @@ export function criarEquipe(dados: NovaEquipeRequest, token: string) {
     body: JSON.stringify(dados),
   });
 }
+
+// ---------- Dashboard (painel) ----------
+// Rotas liberadas para COORDENADOR e ATENDENTE (EQUIPE_CAMPO recebe 403).
+
+// GET /dashboard/resumo (DashboardResumoResponseDTO)
+export interface DashboardResumo {
+  totalOcorrencias: number;
+  emAberto: number;
+  urgenciasCriticas: number; // críticas ainda não concluídas
+  concluidas: number;
+  taxaConclusao: number; // ex.: 56.3
+}
+
+// Um item de gráfico (ContagemResponseDTO), ex.: { rotulo: "AVE", quantidade: 12 }
+export interface Contagem {
+  rotulo: string;
+  quantidade: number;
+}
+
+// Ocorrência concluída, só com o que o Dashboard usa para montar os gráficos mensais
+export interface OcorrenciaConcluida {
+  id: number;
+  dataHoraRegistro: string;
+  equipe: { id: number; nome: string } | null;
+}
+
+function buscarComToken<T>(caminho: string, token: string, signal?: AbortSignal) {
+  return requisitar<T>(caminho, { headers: comToken(token), cache: 'no-store', signal });
+}
+
+export const buscarResumoDashboard = (token: string, signal?: AbortSignal) =>
+  buscarComToken<DashboardResumo>('/dashboard/resumo', token, signal);
+
+// Sempre traz todos os status, mesmo os que estão com zero
+export const contarOcorrenciasPorStatus = (token: string, signal?: AbortSignal) =>
+  buscarComToken<Contagem[]>('/dashboard/por-status', token, signal);
+
+// Sempre traz todas as categorias (AVE, ANFIBIO, MAMIFERO, PEIXE, REPTIL, INDEFINIDO)
+export const contarOcorrenciasPorCategoria = (token: string, signal?: AbortSignal) =>
+  buscarComToken<Contagem[]>('/dashboard/por-categoria', token, signal);
+
+// Últimos N meses, do mais antigo para o mais recente: [{ rotulo: "2026-10", quantidade: 7 }, ...]
+export const contarOcorrenciasPorMes = (meses: number, token: string, signal?: AbortSignal) =>
+  buscarComToken<Contagem[]>(`/dashboard/por-mes?meses=${meses}`, token, signal);
+
+// GET /ocorrencias/filtro?status=CONCLUIDO&inicio=... (inicio no formato 2026-06-01T00:00:00)
+export const listarOcorrenciasConcluidas = (inicio: string, token: string, signal?: AbortSignal) =>
+  buscarComToken<OcorrenciaConcluida[]>(
+    `/ocorrencias/filtro?status=CONCLUIDO&inicio=${encodeURIComponent(inicio)}`,
+    token,
+    signal,
+  );
