@@ -1,14 +1,14 @@
 'use client';
 
-import Link from 'next/link';
 import { useCallback, useEffect, useState } from 'react';
-import { ArrowLeft, Plus, RotateCw, Users, WifiOff } from 'lucide-react';
+import { Plus, RotateCw, Users, WifiOff } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Spinner } from '@/components/ui/spinner';
 import { ApiError, listarEquipesResumo, type EquipeResumo } from '@/lib/api';
 import { encerrarSessao, obterToken } from '@/lib/sessao';
+import { PainelAdmin } from '../../_components/PainelAdmin';
 import { CardEquipe } from './CardEquipe';
 import { ModalEquipe } from './ModalEquipe';
 import { NovaEquipe } from './NovaEquipe';
@@ -67,85 +67,80 @@ export default function EquipesDeCampo() {
   }
 
   return (
-    <main className="min-h-dvh bg-background">
-      <div className="mx-auto max-w-5xl px-5 py-8 md:py-10">
-        <Link
-          href="/admin"
-          className="inline-flex items-center gap-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground"
-        >
-          <ArrowLeft className="size-4" /> Painel
-        </Link>
-
-        <header className="mt-4 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-          <div>
-            <h1 className="font-heading text-3xl text-foreground md:text-4xl">Equipes de Campo</h1>
-            <p className="mt-1.5 text-sm text-muted-foreground">
-              {estado.tipo === 'ok' ? <Subtitulo equipes={estado.equipes} /> : 'Carregando equipes…'}
-            </p>
-          </div>
-          <Button size="lg" className="h-11 rounded-xl px-4 text-sm font-semibold" onClick={() => setNovaAberta(true)}>
-            <Plus /> Nova equipe
-          </Button>
-        </header>
-
-        <section className="mt-8" aria-label="Equipes">
-          {estado.tipo === 'carregando' && (
-            <div className="grid gap-4 md:grid-cols-2">
-              {[0, 1, 2, 3].map((i) => (
-                <Skeleton key={i} className="h-56 rounded-2xl" />
-              ))}
+    <PainelAdmin pagina="Equipes" token={token} aoSair={sessaoExpirada}>
+      <main className="bg-background">
+        <div className="mx-auto max-w-5xl px-5 py-8 md:py-10">
+          <header className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+            <div>
+              <h1 className="font-heading text-3xl text-foreground md:text-4xl">Equipes de Campo</h1>
+              <p className="mt-1.5 text-sm text-muted-foreground">
+                {estado.tipo === 'ok' ? <Subtitulo equipes={estado.equipes} /> : 'Carregando equipes…'}
+              </p>
             </div>
-          )}
+            <Button size="lg" className="h-11 rounded-xl px-4 text-sm font-semibold" onClick={() => setNovaAberta(true)}>
+              <Plus /> Nova equipe
+            </Button>
+          </header>
 
-          {estado.tipo === 'erro' && (
-            <Aviso Icone={WifiOff} titulo="Não foi possível carregar as equipes" texto={estado.mensagem}>
-              <Button
-                variant="outline"
-                onClick={() => {
-                  setEstado({ tipo: 'carregando' });
-                  recarregar();
-                }}
-              >
-                <RotateCw /> Tentar de novo
-              </Button>
-            </Aviso>
-          )}
+          <section className="mt-8" aria-label="Equipes">
+            {estado.tipo === 'carregando' && (
+              <div className="grid gap-4 md:grid-cols-2">
+                {[0, 1, 2, 3].map((i) => (
+                  <Skeleton key={i} className="h-56 rounded-2xl" />
+                ))}
+              </div>
+            )}
 
-          {estado.tipo === 'ok' && estado.equipes.length === 0 && (
-            <Aviso
-              Icone={Users}
-              titulo="Nenhuma equipe cadastrada"
-              texto="Cadastre a primeira equipe de campo pelo botão “Nova equipe”."
-            />
-          )}
+            {estado.tipo === 'erro' && (
+              <Aviso Icone={WifiOff} titulo="Não foi possível carregar as equipes" texto={estado.mensagem}>
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setEstado({ tipo: 'carregando' });
+                    recarregar();
+                  }}
+                >
+                  <RotateCw /> Tentar de novo
+                </Button>
+              </Aviso>
+            )}
 
-          {estado.tipo === 'ok' && estado.equipes.length > 0 && (
-            <div className="grid gap-4 md:grid-cols-2">
-              {estado.equipes.map((equipe) => (
-                <CardEquipe key={equipe.id} equipe={equipe} onAbrir={() => setSelecionada(equipe)} />
-              ))}
-            </div>
-          )}
-        </section>
-      </div>
+            {estado.tipo === 'ok' && estado.equipes.length === 0 && (
+              <Aviso
+                Icone={Users}
+                titulo="Nenhuma equipe cadastrada"
+                texto="Cadastre a primeira equipe de campo pelo botão “Nova equipe”."
+              />
+            )}
 
-      <ModalEquipe
-        equipe={selecionada}
-        token={token}
-        onFechar={() => {
-          setSelecionada(null);
-          recarregar(); // os números do card podem ter mudado enquanto o modal estava aberto
-        }}
-        onSessaoExpirada={sessaoExpirada}
-      />
-      <NovaEquipe
-        aberto={novaAberta}
-        token={token}
-        onFechar={() => setNovaAberta(false)}
-        onCriada={recarregar}
-        onSessaoExpirada={sessaoExpirada}
-      />
-    </main>
+            {estado.tipo === 'ok' && estado.equipes.length > 0 && (
+              <div className="grid gap-4 md:grid-cols-2">
+                {estado.equipes.map((equipe) => (
+                  <CardEquipe key={equipe.id} equipe={equipe} onAbrir={() => setSelecionada(equipe)} />
+                ))}
+              </div>
+            )}
+          </section>
+        </div>
+
+        <ModalEquipe
+          equipe={selecionada}
+          token={token}
+          onFechar={() => {
+            setSelecionada(null);
+            recarregar(); // os números do card podem ter mudado enquanto o modal estava aberto
+          }}
+          onSessaoExpirada={sessaoExpirada}
+        />
+        <NovaEquipe
+          aberto={novaAberta}
+          token={token}
+          onFechar={() => setNovaAberta(false)}
+          onCriada={recarregar}
+          onSessaoExpirada={sessaoExpirada}
+        />
+      </main>
+    </PainelAdmin>
   );
 }
 

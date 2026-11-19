@@ -4,7 +4,6 @@ import { Lock, RotateCw, WifiOff, type LucideIcon } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar';
 import { Spinner } from '@/components/ui/spinner';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import {
@@ -18,8 +17,7 @@ import {
   type DashboardResumo,
 } from '@/lib/api';
 import { encerrarSessao, obterToken } from '@/lib/sessao';
-import { BarraLateral } from '../BarraLateral';
-import { CabecalhoPainel } from '../CabecalhoPainel';
+import { PainelAdmin } from '../PainelAdmin';
 import { CardsIndicadores } from './CardsIndicadores';
 import { agruparPorAnimal, inicioDosUltimosMeses, montarSerieMensal, type PontoMensal } from './dados';
 import { GraficoOcorrenciasMensais } from './GraficoOcorrenciasMensais';
@@ -120,98 +118,93 @@ export default function Dashboard() {
   const carregando = gerais.tipo === 'carregando' || mensal.tipo === 'carregando';
 
   return (
-    <SidebarProvider>
-      <BarraLateral aoSair={sair} />
-      <SidebarInset className="min-w-0">
-        <CabecalhoPainel pagina="Dashboard" token={token} />
-
-        <main className="mx-auto w-full max-w-7xl px-4 py-6 md:px-8 md:py-8">
-          <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
-            <div>
-              <h1 className="font-heading text-2xl text-foreground md:text-3xl">Dashboard</h1>
-              <p className="mt-1 text-sm text-muted-foreground">
-                Visão geral das ocorrências, atendimentos e resgates do instituto.
-              </p>
-            </div>
-            <Button variant="outline" onClick={atualizar} disabled={carregando}>
-              <RotateCw className={carregando ? 'animate-spin' : undefined} /> Atualizar
-            </Button>
+    <PainelAdmin pagina="Dashboard" token={token} aoSair={sair}>
+      <main className="mx-auto w-full max-w-7xl px-4 py-6 md:px-8 md:py-8">
+        <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
+          <div>
+            <h1 className="font-heading text-2xl text-foreground md:text-3xl">Dashboard</h1>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Visão geral das ocorrências, atendimentos e resgates do instituto.
+            </p>
           </div>
+          <Button variant="outline" onClick={atualizar} disabled={carregando}>
+            <RotateCw className={carregando ? 'animate-spin' : undefined} /> Atualizar
+          </Button>
+        </div>
 
-          {gerais.tipo === 'erro' ? (
-            <ErroCarregamento erro={gerais.erro} aoTentarDeNovo={atualizar} />
-          ) : (
-            <div className="space-y-4">
-              <CardsIndicadores resumo={dadosGerais?.resumo} />
+        {gerais.tipo === 'erro' ? (
+          <ErroCarregamento erro={gerais.erro} aoTentarDeNovo={atualizar} />
+        ) : (
+          <div className="space-y-4">
+            <CardsIndicadores resumo={dadosGerais?.resumo} />
 
-              <div className="grid gap-4 xl:grid-cols-5">
-                <Secao
-                  className="xl:col-span-3"
-                  titulo="Ocorrências por mês"
-                  descricao="Registradas e concluídas em cada mês"
-                  acao={
-                    <ToggleGroup
-                      type="single"
-                      size="sm"
-                      variant="outline"
-                      value={String(meses)}
-                      onValueChange={trocarPeriodo}
-                      aria-label="Período dos gráficos mensais"
-                    >
-                      <ToggleGroupItem value="6" className="px-3">6 meses</ToggleGroupItem>
-                      <ToggleGroupItem value="12" className="px-3">12 meses</ToggleGroupItem>
-                    </ToggleGroup>
-                  }
-                >
-                  {mensal.tipo === 'erro' ? (
-                    <ErroGrafico />
-                  ) : serieMensal ? (
-                    <GraficoOcorrenciasMensais dados={serieMensal} />
-                  ) : (
-                    <CarregandoGrafico altura="h-72" />
-                  )}
-                </Secao>
+            <div className="grid gap-4 xl:grid-cols-5">
+              <Secao
+                className="xl:col-span-3"
+                titulo="Ocorrências por mês"
+                descricao="Registradas e concluídas em cada mês"
+                acao={
+                  <ToggleGroup
+                    type="single"
+                    size="sm"
+                    variant="outline"
+                    value={String(meses)}
+                    onValueChange={trocarPeriodo}
+                    aria-label="Período dos gráficos mensais"
+                  >
+                    <ToggleGroupItem value="6" className="px-3">6 meses</ToggleGroupItem>
+                    <ToggleGroupItem value="12" className="px-3">12 meses</ToggleGroupItem>
+                  </ToggleGroup>
+                }
+              >
+                {mensal.tipo === 'erro' ? (
+                  <ErroGrafico />
+                ) : serieMensal ? (
+                  <GraficoOcorrenciasMensais dados={serieMensal} />
+                ) : (
+                  <CarregandoGrafico altura="h-72" />
+                )}
+              </Secao>
 
-                <Secao className="xl:col-span-2" titulo="Ocorrências por tipo de animal">
-                  {dadosGerais ? (
-                    <GraficoTipoAnimal dados={agruparPorAnimal(dadosGerais.porCategoria)} />
-                  ) : (
-                    <CarregandoGrafico altura="h-72" />
-                  )}
-                </Secao>
-              </div>
-
-              <div className="grid gap-4 xl:grid-cols-5">
-                <Secao
-                  className="xl:col-span-3"
-                  titulo="Resgates realizados por mês"
-                  descricao="Ocorrências concluídas que tiveram equipe de campo designada"
-                >
-                  {mensal.tipo === 'erro' ? (
-                    <ErroGrafico />
-                  ) : serieMensal ? (
-                    <GraficoResgatesMensais dados={serieMensal} />
-                  ) : (
-                    <CarregandoGrafico />
-                  )}
-                </Secao>
-
-                <Secao className="xl:col-span-2" titulo="Ocorrências por status">
-                  {dadosGerais ? (
-                    <OcorrenciasPorStatus
-                      porStatus={dadosGerais.porStatus}
-                      total={dadosGerais.resumo.totalOcorrencias}
-                    />
-                  ) : (
-                    <CarregandoGrafico />
-                  )}
-                </Secao>
-              </div>
+              <Secao className="xl:col-span-2" titulo="Ocorrências por tipo de animal">
+                {dadosGerais ? (
+                  <GraficoTipoAnimal dados={agruparPorAnimal(dadosGerais.porCategoria)} />
+                ) : (
+                  <CarregandoGrafico altura="h-72" />
+                )}
+              </Secao>
             </div>
-          )}
-        </main>
-      </SidebarInset>
-    </SidebarProvider>
+
+            <div className="grid gap-4 xl:grid-cols-5">
+              <Secao
+                className="xl:col-span-3"
+                titulo="Resgates realizados por mês"
+                descricao="Ocorrências concluídas que tiveram equipe de campo designada"
+              >
+                {mensal.tipo === 'erro' ? (
+                  <ErroGrafico />
+                ) : serieMensal ? (
+                  <GraficoResgatesMensais dados={serieMensal} />
+                ) : (
+                  <CarregandoGrafico />
+                )}
+              </Secao>
+
+              <Secao className="xl:col-span-2" titulo="Ocorrências por status">
+                {dadosGerais ? (
+                  <OcorrenciasPorStatus
+                    porStatus={dadosGerais.porStatus}
+                    total={dadosGerais.resumo.totalOcorrencias}
+                  />
+                ) : (
+                  <CarregandoGrafico />
+                )}
+              </Secao>
+            </div>
+          </div>
+        )}
+      </main>
+    </PainelAdmin>
   );
 }
 
