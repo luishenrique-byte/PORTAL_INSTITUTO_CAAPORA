@@ -37,4 +37,8 @@ public class AuthenticationService {
         }
 
     }
+
+    public String getUsernameFromToken(String token) {
+        return tokenProvider.getUsernameFromToken(token);
+    }
 }

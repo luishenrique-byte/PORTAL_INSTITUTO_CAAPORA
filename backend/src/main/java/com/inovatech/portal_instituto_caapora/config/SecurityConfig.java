@@ -77,6 +77,7 @@ public class SecurityConfig {
                     // ==========================================
                     .requestMatchers(HttpMethod.PATCH, "/ocorrencias/*/status").hasAnyAuthority("EQUIPE_CAMPO", "COORDENADOR","ATENDENTE")
                     .requestMatchers(HttpMethod.GET,"/ocorrencias").hasAnyAuthority("EQUIPE_CAMPO","ATENDENTE", "COORDENADOR")
+                    .requestMatchers(HttpMethod.GET,"/auth/me").authenticated()
                             .anyRequest().authenticated()
                 )
                 .addFilterBefore(jwtAutheticationFilter, UsernamePasswordAuthenticationFilter.class)
