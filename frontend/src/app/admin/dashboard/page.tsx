@@ -1,11 +1,6 @@
-import type { Metadata } from 'next';
-import Dashboard from './_components/Dashboard';
+import { redirect } from 'next/navigation';
 
-export const metadata: Metadata = {
-  title: 'Dashboard | Painel Administrativo — Instituto Caapora',
-  robots: { index: false, follow: false },
-};
-
-export default function DashboardPage() {
-  return <Dashboard />;
+// O Dashboard agora é a página inicial do painel (/admin); mantém o endereço antigo funcionando.
+export default function DashboardAntigo() {
+  redirect('/admin');
 }

@@ -7,7 +7,6 @@ import { Button } from '@/components/ui/button';
 import { Spinner } from '@/components/ui/spinner';
 import { ApiError } from '@/lib/api';
 import { encerrarSessao, obterToken } from '@/lib/sessao';
-import { DashboardLayout } from '../../_components/DashboardLayout';
 import { buscarOcorrenciasDoPeriodo, type OcorrenciaDashboard } from './api';
 import { CardsIndicadores } from './CardsIndicadores';
 import { FiltroPeriodo } from './FiltroPeriodo';
@@ -30,16 +29,11 @@ export default function Dashboard() {
   const [estado, setEstado] = useState<Estado>({ tipo: 'carregando' });
   const [recarga, setRecarga] = useState(0);
 
-  // Sem sessão válida, volta para o login (mesma regra das outras telas do painel)
+  // O layout do painel já redireciona quem não tem sessão; aqui só lemos o token para a API
   useEffect(() => {
-    const t = obterToken();
-    if (t) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- localStorage só existe no navegador
-      setToken(t);
-    } else {
-      router.replace('/admin/login');
-    }
-  }, [router]);
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- localStorage só existe no navegador
+    setToken(obterToken());
+  }, []);
 
   const sair = useCallback(() => {
     encerrarSessao();
@@ -80,16 +74,16 @@ export default function Dashboard() {
 
   if (!token) {
     return (
-      <main className="flex min-h-dvh items-center justify-center bg-background">
+      <div className="flex min-h-[50dvh] items-center justify-center">
         <Spinner className="size-6 text-primary" />
-      </main>
+      </div>
     );
   }
 
   const carregando = estado.tipo === 'carregando';
 
   return (
-    <DashboardLayout pagina="Dashboard" token={token} aoSair={sair}>
+    <>
       <div className="mx-auto w-full max-w-7xl px-4 py-6 md:px-8 md:py-8">
         <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
           <div>
@@ -143,6 +137,6 @@ export default function Dashboard() {
           </div>
         )}
       </div>
-    </DashboardLayout>
+    </>
   );
 }
