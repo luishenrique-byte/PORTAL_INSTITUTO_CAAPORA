@@ -10,4 +10,6 @@ import java.util.Optional;
 public interface PerfilRepository extends JpaRepository<PerfilEntity, Long> {
 
     Optional<PerfilEntity> findByPerfil(String perfil);
+
+    boolean existsByPerfil(String perfil);
 }

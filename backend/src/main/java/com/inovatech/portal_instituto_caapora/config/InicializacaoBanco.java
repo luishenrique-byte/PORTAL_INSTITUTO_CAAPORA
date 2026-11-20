@@ -32,9 +32,17 @@ public class InicializacaoBanco implements CommandLineRunner {
     @Override
     public void run(String... args) throws Exception {
 
-        perfilService.criar(new PerfilRequestDTO("COORDENADOR"));
-        perfilService.criar(new PerfilRequestDTO("ATENDENTE"));
-        perfilService.criar(new PerfilRequestDTO("EQUIPE_CAMPO"));
+        if (!perfilService.existePorPerfil(new PerfilRequestDTO("COORDENADOR"))){
+            perfilService.criar(new PerfilRequestDTO("COORDENADOR"));
+        }
+
+        if (!perfilService.existePorPerfil(new PerfilRequestDTO("ATENDENTE"))){
+            perfilService.criar(new PerfilRequestDTO("ATENDENTE"));
+        }
+
+        if (!perfilService.existePorPerfil(new PerfilRequestDTO("EQUIPE_CAMPO"))){
+            perfilService.criar(new PerfilRequestDTO("EQUIPE_CAMPO"));
+        }
 
         if (funcionarioService.existsByEmail(emailAdmin)) {
             return;
