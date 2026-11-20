@@ -1,8 +1,7 @@
 'use client';
 
-import Link from 'next/link';
 import { useCallback, useEffect, useState } from 'react';
-import { ArrowLeft, Plus, RotateCw, Users, WifiOff } from 'lucide-react';
+import { Plus, RotateCw, Users, WifiOff } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -27,16 +26,11 @@ export default function EquipesDeCampo() {
   const [selecionada, setSelecionada] = useState<EquipeResumo | null>(null);
   const [novaAberta, setNovaAberta] = useState(false);
 
-  // Sem sessão válida, volta para o login (mesma regra do painel)
+  // O layout do painel já redireciona quem não tem sessão; aqui só lemos o token para a API
   useEffect(() => {
-    const t = obterToken();
-    if (t) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- localStorage só existe no navegador
-      setToken(t);
-    } else {
-      router.replace('/admin/login');
-    }
-  }, [router]);
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- localStorage só existe no navegador
+    setToken(obterToken());
+  }, []);
 
   const sessaoExpirada = useCallback(() => {
     encerrarSessao();
@@ -60,23 +54,16 @@ export default function EquipesDeCampo() {
 
   if (!token) {
     return (
-      <main className="flex min-h-dvh items-center justify-center bg-background">
+      <div className="flex min-h-[50dvh] items-center justify-center">
         <Spinner className="size-6 text-primary" />
-      </main>
+      </div>
     );
   }
 
   return (
-    <main className="min-h-dvh bg-background">
+    <>
       <div className="mx-auto max-w-5xl px-5 py-8 md:py-10">
-        <Link
-          href="/admin"
-          className="inline-flex items-center gap-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground"
-        >
-          <ArrowLeft className="size-4" /> Painel
-        </Link>
-
-        <header className="mt-4 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+        <header className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
           <div>
             <h1 className="font-heading text-3xl text-foreground md:text-4xl">Equipes de Campo</h1>
             <p className="mt-1.5 text-sm text-muted-foreground">
@@ -145,7 +132,7 @@ export default function EquipesDeCampo() {
         onCriada={recarregar}
         onSessaoExpirada={sessaoExpirada}
       />
-    </main>
+    </>
   );
 }
 
