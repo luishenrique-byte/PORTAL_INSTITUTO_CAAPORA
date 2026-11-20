@@ -52,6 +52,11 @@ public class PerfilService {
                 .orElseThrow(() -> new EntityNotFoundException("Perfil não encontrado"));
     }
 
+    @Transactional(readOnly = true)
+    public boolean existePorPerfil(PerfilRequestDTO dto) {
+        return perfilRepository.existsByPerfil(dto.perfil());
+    }
+
     // Usado por outros services que precisam da entidade, não do DTO
     PerfilEntity buscarEntidade(Long id) {
         return perfilRepository.findById(id)

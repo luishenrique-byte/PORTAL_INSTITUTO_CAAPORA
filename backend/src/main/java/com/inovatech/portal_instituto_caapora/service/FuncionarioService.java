@@ -4,6 +4,7 @@ import com.inovatech.portal_instituto_caapora.database.models.FuncionarioEntity;
 import com.inovatech.portal_instituto_caapora.database.repository.FuncionarioRepository;
 import com.inovatech.portal_instituto_caapora.dto.request.FuncionarioRequestDTO;
 import com.inovatech.portal_instituto_caapora.dto.response.FuncionarioResponseDTO;
+import com.inovatech.portal_instituto_caapora.dto.response.UsuarioLogadoResponseDTO;
 import com.inovatech.portal_instituto_caapora.exception.RecursoNaoEncontradoException;
 import com.inovatech.portal_instituto_caapora.exception.RegraNegocioException;
 import jakarta.persistence.EntityNotFoundException;
@@ -84,6 +85,14 @@ public class FuncionarioService {
     @Transactional(readOnly = true)
     public boolean existsByEmail(String email) {
         return funcionarioRepository.existsByEmail(email);
+    }
+
+    @Transactional(readOnly = true)
+    public UsuarioLogadoResponseDTO buscarUsuarioLogadoPorEmail(String email) {
+        FuncionarioEntity usuario = funcionarioRepository.findByEmail(email)
+                .orElseThrow(() -> new RecursoNaoEncontradoException("Funcionário não encontrado: " + email));
+
+        return UsuarioLogadoResponseDTO.fromEntity(usuario);
     }
 
     FuncionarioEntity buscarEntidade(Long id) {

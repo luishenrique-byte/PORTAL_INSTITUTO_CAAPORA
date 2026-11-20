@@ -5,5 +5,6 @@ public enum OcorrenciaStatus {
     TRIAGEM,
     ATENDIMENTO,
     RESGATE,
-    CONCLUIDO
+    CONCLUIDO,
+    CANCELADO
 }
