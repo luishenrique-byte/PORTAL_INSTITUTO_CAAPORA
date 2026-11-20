@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import {
+  Ban,
   Check,
   ClipboardCheck,
   Clock,
@@ -41,6 +42,7 @@ const ICONE_STATUS: Record<OcorrenciaStatus, LucideIcon> = {
   ATENDIMENTO: Truck,
   RESGATE: Siren,
   CONCLUIDO: Check,
+  CANCELADO: Ban,
 };
 
 type Estado =
@@ -157,6 +159,30 @@ function LinhaDoTempo({ dados }: { dados: RastreioOcorrencia }) {
   const indiceAtual = ETAPAS_OCORRENCIA.findIndex((e) => e.status === dados.ocorrenciaStatus);
   // última vez que a ocorrência entrou em cada status
   const quando = (s: OcorrenciaStatus) => dados.linhaDoTempo.filter((e) => e.status === s).at(-1)?.dataHora;
+
+  // Cancelada não faz parte do fluxo de etapas: mostra o encerramento em vez de uma linha do tempo parada
+  if (dados.ocorrenciaStatus === 'CANCELADO') {
+    const canceladaEm = quando('CANCELADO');
+    return (
+      <section className="rounded-2xl border border-border bg-card p-5" aria-labelledby="titulo-historico">
+        <h2 id="titulo-historico" className="mb-5 text-sm font-semibold text-foreground" style={{ fontFamily: 'var(--font-body)' }}>
+          Histórico da ocorrência
+        </h2>
+        <div className="flex gap-4">
+          <span className="flex size-9 shrink-0 items-center justify-center rounded-full border border-border bg-muted text-muted-foreground">
+            <Ban className="size-4" aria-hidden />
+          </span>
+          <div className="min-w-0 flex-1 pt-1">
+            <p className="text-sm font-semibold text-foreground">Ocorrência cancelada</p>
+            <p className="text-xs text-muted-foreground">{canceladaEm ? dataRelativa(canceladaEm) : 'Atendimento encerrado'}</p>
+            <p className="mt-2 rounded-lg border border-border bg-muted/60 px-3 py-2 text-xs text-muted-foreground">
+              Esta ocorrência foi cancelada e o atendimento foi encerrado. Em caso de dúvida, ligue para {TELEFONE}.
+            </p>
+          </div>
+        </div>
+      </section>
+    );
+  }
 
   return (
     <section className="rounded-2xl border border-border bg-card p-5" aria-labelledby="titulo-historico">

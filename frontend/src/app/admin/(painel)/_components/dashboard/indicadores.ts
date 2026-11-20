@@ -60,11 +60,12 @@ export const STATUS_DASHBOARD = [
   { status: 'ATENDIMENTO', rotulo: 'Em atendimento' },
   { status: 'RESGATE', rotulo: 'Resgate em campo' },
   { status: 'CONCLUIDO', rotulo: 'Concluída' },
+  { status: 'CANCELADO', rotulo: 'Cancelada' },
   { status: 'RECUSADA', rotulo: 'Recusada' },
 ];
 
-// Status que encerram a ocorrência
-const ENCERRADOS = new Set([STATUS_CONCLUIDO, 'RECUSADA']);
+// Status que encerram a ocorrência (deixam de contar como "em aberto")
+const ENCERRADOS = new Set([STATUS_CONCLUIDO, 'CANCELADO', 'RECUSADA']);
 
 // Cores conferidas para daltonismo (verde, mostarda, azul, laranja, roxo)
 export const GRUPOS_ANIMAIS = [

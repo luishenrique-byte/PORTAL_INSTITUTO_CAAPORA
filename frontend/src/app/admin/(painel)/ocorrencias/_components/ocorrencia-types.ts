@@ -21,7 +21,8 @@ export type OcorrenciaStatus =
   | "TRIAGEM"
   | "ATENDIMENTO"
   | "RESGATE"
-  | "CONCLUIDO";
+  | "CONCLUIDO"
+  | "CANCELADO";
 
 export interface HistoricoItem {
   id: number;
@@ -150,6 +151,10 @@ export const STATUS_ORDEM: OcorrenciaStatus[] = [
   "CONCLUIDO",
 ];
 
+// Status que encerram a ocorrência: não há próximo passo no fluxo de atendimento
+// (CANCELADO fica fora de STATUS_ORDEM porque não é uma etapa do fluxo).
+export const STATUS_ENCERRADOS: OcorrenciaStatus[] = ["CONCLUIDO", "CANCELADO"];
+
 export const STATUS_CONFIG: Record<
   OcorrenciaStatus,
   { label: string; badgeClass: string }
@@ -173,6 +178,10 @@ export const STATUS_CONFIG: Record<
   CONCLUIDO: {
     label: "Concluído",
     badgeClass: "bg-emerald-100 text-emerald-800 border-emerald-200",
+  },
+  CANCELADO: {
+    label: "Cancelado",
+    badgeClass: "bg-slate-100 text-slate-700 border-slate-300",
   },
 };
 

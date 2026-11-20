@@ -39,6 +39,7 @@ import {
   SAUDE_LABEL,
   URGENCIA_CONFIG,
   STATUS_CONFIG,
+  STATUS_ENCERRADOS,
   STATUS_ORDEM,
   extrairLocalizacao,
   formatarDataHora,
@@ -285,7 +286,7 @@ export function ModalDetalheOcorrencia({
         </DialogHeader>
 
         <div className="space-y-5 py-2 text-sm">
-          {ocorrencia.ocorrenciaStatus !== "CONCLUIDO" && (
+          {!STATUS_ENCERRADOS.includes(ocorrencia.ocorrenciaStatus) && (
             <section className="bg-emerald-50/70 rounded-lg p-4 border border-emerald-200 space-y-3">
               <h3 className="font-semibold text-emerald-950 text-xs uppercase tracking-wider">
                 Atualizar Atendimento

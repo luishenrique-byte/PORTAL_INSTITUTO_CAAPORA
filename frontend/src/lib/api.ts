@@ -22,7 +22,7 @@ export type SaudeStatus =
 
 export type TipoMidia = 'TEXTO' | 'FOTO' | 'VIDEO' | 'AUDIO';
 
-export type OcorrenciaStatus = 'REGISTRADA' | 'TRIAGEM' | 'ATENDIMENTO' | 'RESGATE' | 'CONCLUIDO';
+export type OcorrenciaStatus = 'REGISTRADA' | 'TRIAGEM' | 'ATENDIMENTO' | 'RESGATE' | 'CONCLUIDO' | 'CANCELADO';
 
 export interface OcorrenciaPublicaRequest {
   latitude?: number | null;
