@@ -10,6 +10,7 @@ import {
   passo1Valido,
   passo2Valido,
   passo3Valido,
+  temFoto,
   type DadosFormulario,
 } from './passos';
 import { Sucesso, type ResultadoEnvio } from './Sucesso';
@@ -52,12 +53,27 @@ function montarRequisicao(d: DadosFormulario): OcorrenciaPublicaRequest {
   };
 }
 
+// Texto do aviso junto ao botão quando a etapa está incompleta
+function resumoPendencias(etapa: number, d: DadosFormulario): string {
+  if (etapa === 0) return 'Use o GPS ou digite o endereço para continuar.';
+  if (etapa === 2) return 'Marque "Quero permanecer anônimo" ou informe nome e telefone.';
+  const faltas = [
+    d.categoria === null && 'o tipo de animal',
+    d.saude === null && 'o estado de saúde',
+    !temFoto(d.arquivos) && 'pelo menos uma foto',
+  ].filter(Boolean) as string[];
+  const lista = faltas.length > 1 ? `${faltas.slice(0, -1).join(', ')} e ${faltas.at(-1)}` : faltas[0];
+  return `Para continuar, informe ${lista}.`;
+}
+
 export function RegistroOcorrencia() {
   const [etapa, setEtapa] = useState(0);
   const [dados, setDados] = useState<DadosFormulario>(VAZIO);
   const [enviando, setEnviando] = useState<string | null>(null); // texto do progresso
   const [erro, setErro] = useState('');
   const [resultado, setResultado] = useState<ResultadoEnvio | null>(null);
+  // Clicou em Continuar/Enviar com algo faltando: passa a mostrar os avisos da etapa
+  const [tentou, setTentou] = useState(false);
 
   const atualizar = (parcial: Partial<DadosFormulario>) => setDados((d) => ({ ...d, ...parcial }));
 
@@ -66,6 +82,11 @@ export function RegistroOcorrencia() {
   }, [etapa, resultado]);
 
   const validos = [passo1Valido(dados), passo2Valido(dados), passo3Valido(dados)];
+
+  function irPara(nova: number) {
+    setTentou(false);
+    setEtapa(nova);
+  }
 
   async function enviar() {
     setErro('');
@@ -85,8 +106,16 @@ export function RegistroOcorrencia() {
 
   function onSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!validos[etapa] || enviando) return;
-    if (etapa < 2) setEtapa(etapa + 1);
+    if (enviando) return;
+    if (!validos[etapa]) {
+      setTentou(true);
+      // leva a pessoa até o primeiro campo que falta
+      requestAnimationFrame(() =>
+        document.querySelector('[data-pendente]')?.scrollIntoView({ behavior: 'smooth', block: 'center' }),
+      );
+      return;
+    }
+    if (etapa < 2) irPara(etapa + 1);
     else void enviar();
   }
 
@@ -94,7 +123,7 @@ export function RegistroOcorrencia() {
     setDados(VAZIO);
     setResultado(null);
     setErro('');
-    setEtapa(0);
+    irPara(0);
   }
 
   if (resultado) {
@@ -106,18 +135,19 @@ export function RegistroOcorrencia() {
     );
   }
 
-  const voltar = etapa > 0 && !enviando ? () => setEtapa(etapa - 1) : undefined;
+  const voltar = etapa > 0 && !enviando ? () => irPara(etapa - 1) : undefined;
 
   return (
     <>
-      <Cabecalho etapa={etapa} onVoltar={etapa > 0 ? () => !enviando && setEtapa(etapa - 1) : null} />
+      <Cabecalho etapa={etapa} onVoltar={etapa > 0 ? () => !enviando && irPara(etapa - 1) : null} />
       <main className="mx-auto max-w-xl px-5 pt-6 pb-16">
         <Stepper etapa={etapa} />
         <form onSubmit={onSubmit} noValidate>
           {etapa === 0 && <PassoLocalizacao dados={dados} atualizar={atualizar} />}
-          {etapa === 1 && <PassoAnimal dados={dados} atualizar={atualizar} />}
+          {etapa === 1 && <PassoAnimal dados={dados} atualizar={atualizar} mostrarErros={tentou} />}
           {etapa === 2 && <PassoContato dados={dados} atualizar={atualizar} />}
 
+          {tentou && !validos[etapa] && <Erro>{resumoPendencias(etapa, dados)}</Erro>}
           {erro && <Erro>{erro}</Erro>}
 
           <Rodape

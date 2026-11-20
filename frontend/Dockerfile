@@ -10,6 +10,9 @@ COPY . .
 # URL da API usada pelo navegador; o Next.js grava esse valor no build
 ARG NEXT_PUBLIC_API_URL=http://localhost:8080
 ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
+# Chave de navegador do Google Maps; o Next.js grava esse valor no build
+ARG NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=
+ENV NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=$NEXT_PUBLIC_GOOGLE_MAPS_API_KEY
 RUN npm run build
 
 FROM node:24-alpine AS runner

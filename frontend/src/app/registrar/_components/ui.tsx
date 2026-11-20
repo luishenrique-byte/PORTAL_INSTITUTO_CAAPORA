@@ -108,8 +108,14 @@ export function Rodape({
         <Button
           type="submit"
           variant={destaque ? 'cta' : 'dark'}
-          disabled={!podeAvancar || carregando}
-          className={cn(altura, 'flex-1 disabled:bg-muted disabled:text-muted-foreground disabled:opacity-100 disabled:shadow-none')}
+          // Falta algo: o botão fica com cara de inativo, mas o clique mostra o que falta
+          aria-disabled={!podeAvancar || undefined}
+          disabled={carregando}
+          className={cn(
+            altura,
+            'flex-1 disabled:bg-muted disabled:text-muted-foreground disabled:opacity-100 disabled:shadow-none',
+            'aria-disabled:bg-muted aria-disabled:text-muted-foreground aria-disabled:shadow-none',
+          )}
         >
           {carregando && <Spinner />}
           {rotulo}

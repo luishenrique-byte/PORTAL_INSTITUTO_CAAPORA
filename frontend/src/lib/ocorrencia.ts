@@ -22,7 +22,9 @@ export const ETAPAS_OCORRENCIA: { status: OcorrenciaStatus; rotulo: string; desc
   { status: 'CONCLUIDO', rotulo: 'Concluído', descricao: 'Atendimento finalizado.' },
 ];
 
-export const rotuloStatus = (s: OcorrenciaStatus) => ETAPAS_OCORRENCIA.find((e) => e.status === s)?.rotulo ?? s;
+// CANCELADO não é etapa do fluxo (fica fora de ETAPAS_OCORRENCIA), mas tem rótulo próprio
+export const rotuloStatus = (s: OcorrenciaStatus) =>
+  s === 'CANCELADO' ? 'Cancelada' : (ETAPAS_OCORRENCIA.find((e) => e.status === s)?.rotulo ?? s);
 
 // Protocolo no formato CAA-AAMMDD-NNNNN (GeradorProtocolo do backend)
 export const PROTOCOLO_REGEX = /^CAA-\d{6}-\d{5}$/;
