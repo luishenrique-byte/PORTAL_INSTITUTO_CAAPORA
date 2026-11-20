@@ -1,10 +1,8 @@
 ﻿"use client";
 
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
-  ArrowLeft,
   Search,
   LayoutGrid,
   Table as TableIcon,
@@ -59,10 +57,8 @@ export default function GerenciamentoOcorrenciasPage() {
 
   useEffect(() => {
     const t = obterToken();
-    if (!t) {
-      router.replace("/admin/login");
-      return;
-    }
+    // O layout do painel já redireciona quem não tem sessão
+    if (!t) return;
     // eslint-disable-next-line react-hooks/set-state-in-effect -- localStorage só existe no navegador
     setToken(t);
 
@@ -228,22 +224,15 @@ export default function GerenciamentoOcorrenciasPage() {
 
   if (!token) {
     return (
-      <main className="flex min-h-dvh items-center justify-center bg-background">
+      <div className="flex min-h-[50dvh] items-center justify-center">
         <Spinner className="size-6 text-primary" />
-      </main>
+      </div>
     );
   }
 
   return (
-    <main className="min-h-dvh bg-background">
+    <>
       <div className="mx-auto max-w-6xl px-5 py-8 md:py-10 space-y-6">
-        <Link
-          href="/admin"
-          className="inline-flex items-center gap-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground"
-        >
-          <ArrowLeft className="size-4" /> Painel
-        </Link>
-
         <header className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
           <div>
             <h1 className="font-heading text-2xl md:text-3xl font-bold text-slate-900">
@@ -536,6 +525,6 @@ export default function GerenciamentoOcorrenciasPage() {
           onSalvar={handleSalvarOcorrencia}
         />
       </div>
-    </main>
+    </>
   );
 }
