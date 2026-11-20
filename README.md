@@ -184,6 +184,7 @@ Todas as variáveis estão descritas em [`.env.example`](.env.example). As princ
 | `DB_PASSWORD` | Senha do PostgreSQL |
 | `JWT_KEY` | Chave de assinatura dos tokens (obrigatória fora do ambiente local) |
 | `NEXT_PUBLIC_API_URL` | URL pública da API usada pelo navegador (gravada no build do frontend) |
+| `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` | Chave do Google Maps usada pelo navegador na tela Mapa de Calor (gravada no build do frontend) |
 | `CORS_ALLOWED_ORIGINS` | Endereços do site autorizados a chamar a API |
 | `DDL_AUTO` | Como o Hibernate trata o esquema (`update` no Docker) |
 | `TZ_APP` | Fuso horário da API (padrão `America/Sao_Paulo`) |
@@ -199,10 +200,18 @@ domínios configurados no painel. Os nomes de serviço nos domínios precisam ex
 2. **Variáveis de ambiente** (aba *Environment*):
    - `NEXT_PUBLIC_API_URL` = URL pública da API (ex.: `https://api.seudominio.com.br`)
    - `CORS_ALLOWED_ORIGINS` = URL pública do site (ex.: `https://seudominio.com.br`)
+   - `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` = chave do Google Maps para a tela Mapa de Calor (veja abaixo)
    - `DB_PASSWORD` = senha forte
    - `JWT_KEY` = chave nova, gerada com `openssl rand -base64 64`
    - **não** defina `COMPOSE_FILE` no servidor
-3. Ao mudar `NEXT_PUBLIC_API_URL`, faça um novo deploy: o valor é gravado no build do frontend.
+3. Ao mudar `NEXT_PUBLIC_API_URL` ou `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY`, faça um novo deploy: os valores
+   são gravados no build do frontend.
+
+A chave do Google Maps é uma chave de navegador, ou seja, fica visível no site. Por isso, no Google Cloud:
+
+- restrinja a chave por referenciador HTTP ao domínio do site (ex.: `https://seudominio.com.br/*`);
+- habilite nela apenas a **Maps JavaScript API**;
+- mantenha o faturamento ativo no projeto: sem ele o mapa não carrega.
 
 ## Como contribuir
 

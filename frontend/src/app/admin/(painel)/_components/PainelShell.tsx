@@ -48,7 +48,7 @@ const BOTAO_MENU = 'h-11 gap-3 px-3 text-[15px] [&>svg]:size-5';
 const ITENS: ItemMenu[] = [
   { titulo: 'Dashboard', href: '/admin', Icone: LayoutDashboard },
   { titulo: 'Ocorrências', href: '/admin/ocorrencias', Icone: ClipboardList },
-  { titulo: 'Mapa de Calor', href: '/admin/mapa-de-calor', Icone: MapPinned, emBreve: true },
+  { titulo: 'Mapa de Calor', href: '/admin/mapa-de-calor', Icone: MapPinned },
   { titulo: 'Equipes', href: '/admin/equipes', Icone: Users },
 ];
 

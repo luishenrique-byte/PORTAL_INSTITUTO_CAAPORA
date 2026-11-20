@@ -9,7 +9,11 @@
     "lint": "eslint ."
   },
   "dependencies": {
+    "@deck.gl/aggregation-layers": "^9.4.1",
+    "@deck.gl/core": "^9.4.1",
+    "@deck.gl/google-maps": "^9.4.1",
     "@tailwindcss/postcss": "^4.3.3",
+    "@vis.gl/react-google-maps": "^1.10.2",
     "class-variance-authority": "^0.7.1",
     "cn": "^0.5.2",
     "date-fns": "^4.4.0",
