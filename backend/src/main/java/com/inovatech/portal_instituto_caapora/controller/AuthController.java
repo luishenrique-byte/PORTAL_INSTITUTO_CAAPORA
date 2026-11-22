@@ -1,6 +1,5 @@
 package com.inovatech.portal_instituto_caapora.controller;
 
-import com.inovatech.portal_instituto_caapora.database.models.FuncionarioEntity;
 import com.inovatech.portal_instituto_caapora.dto.request.LoginRequestDTO;
 import com.inovatech.portal_instituto_caapora.dto.response.TokenResponseDTO;
 import com.inovatech.portal_instituto_caapora.dto.response.UsuarioLogadoResponseDTO;
@@ -23,6 +22,11 @@ public class AuthController {
     @PostMapping("/login")
     public TokenResponseDTO login(@RequestBody @Valid LoginRequestDTO loginRequestDTO){
         return authenticationService.login(loginRequestDTO);
+    }
+
+    @PostMapping("/refresh")
+    public TokenResponseDTO tokenRefresh(Authentication authentication){
+        return authenticationService.refresh(authentication.getName());
     }
 
     @GetMapping("/me")
