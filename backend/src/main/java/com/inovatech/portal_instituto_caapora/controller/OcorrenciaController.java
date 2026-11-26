@@ -55,7 +55,7 @@ public class OcorrenciaController {
 
     // ---------------- Consultas ----------------
 
-    // Fila de ocorrências não concluídas (mais urgentes primeiro)
+    // Fila de ocorrências em aberto, sem concluídas e canceladas (mais urgentes primeiro)
     // GET /ocorrencias
     @GetMapping
     public List<OcorrenciaResponseDTO> listarAtivas() {

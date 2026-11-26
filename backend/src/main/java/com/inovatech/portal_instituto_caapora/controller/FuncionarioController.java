@@ -31,6 +31,14 @@ public class FuncionarioController {
         return funcionarioService.atualizar(id, dto);
     }
 
+    // Coloca na equipe (ou tira, sem equipeId)
+    // PATCH /funcionarios/3/equipe?equipeId=5
+    @PatchMapping("/{id}/equipe")
+    public FuncionarioResponseDTO definirEquipe(@PathVariable Long id,
+                                                @RequestParam(required = false) Long equipeId) {
+        return funcionarioService.definirEquipe(id, equipeId);
+    }
+
     // Não apaga do banco: só desativa (o histórico do funcionário é mantido)
     // DELETE /funcionarios/3
     @DeleteMapping("/{id}")

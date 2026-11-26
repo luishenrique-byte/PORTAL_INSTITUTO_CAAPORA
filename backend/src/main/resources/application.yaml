@@ -18,7 +18,7 @@ spring:
         format_sql: true
         dialect: org.hibernate.dialect.PostgreSQLDialect
   jwt:
-    expiration: ${JWT_EXPIRATION:900000}
+    expiration: ${JWT_EXPIRATION:28800000}
     key: ${JWT_KEY:5P00Qvu+B0OFAKrDRikLhf46mhlwTz18UAF/E01tjYIY3m6U808DcJLkaSk6AOFQJMS7LdVLe2E5DeT8yyDCww==}
 
 app:

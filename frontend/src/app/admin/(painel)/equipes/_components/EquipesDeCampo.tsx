@@ -1,16 +1,15 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
-import { Plus, RotateCw, Users, WifiOff } from 'lucide-react';
-import { useRouter } from 'next/navigation';
+import { useEffect, useState } from 'react';
+import { Plus, RotateCw, UserPlus, Users, WifiOff } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Spinner } from '@/components/ui/spinner';
 import { ApiError, listarEquipesResumo, type EquipeResumo } from '@/lib/api';
-import { encerrarSessao, obterToken } from '@/lib/sessao';
+import { ehCoordenador, useSessaoPainel } from '../../_components/UsuarioContexto';
 import { CardEquipe } from './CardEquipe';
 import { ModalEquipe } from './ModalEquipe';
 import { NovaEquipe } from './NovaEquipe';
+import { NovoFuncionario } from './NovoFuncionario';
 import { plural } from './visual';
 
 type Estado =
@@ -19,26 +18,15 @@ type Estado =
   | { tipo: 'erro'; mensagem: string };
 
 export default function EquipesDeCampo() {
-  const router = useRouter();
-  const [token, setToken] = useState<string | null>(null);
+  const { token, usuario, sair: sessaoExpirada } = useSessaoPainel();
+  const coordenador = ehCoordenador(usuario);
   const [estado, setEstado] = useState<Estado>({ tipo: 'carregando' });
   const [recarga, setRecarga] = useState(0);
   const [selecionada, setSelecionada] = useState<EquipeResumo | null>(null);
   const [novaAberta, setNovaAberta] = useState(false);
-
-  // O layout do painel já redireciona quem não tem sessão; aqui só lemos o token para a API
-  useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- localStorage só existe no navegador
-    setToken(obterToken());
-  }, []);
-
-  const sessaoExpirada = useCallback(() => {
-    encerrarSessao();
-    router.replace('/admin/login');
-  }, [router]);
+  const [funcionarioAberto, setFuncionarioAberto] = useState(false);
 
   useEffect(() => {
-    if (!token) return;
     const controle = new AbortController();
     listarEquipesResumo(token, controle.signal)
       .then((equipes) => setEstado({ tipo: 'ok', equipes }))
@@ -51,14 +39,7 @@ export default function EquipesDeCampo() {
   }, [token, recarga, sessaoExpirada]);
 
   const recarregar = () => setRecarga((r) => r + 1);
-
-  if (!token) {
-    return (
-      <div className="flex min-h-[50dvh] items-center justify-center">
-        <Spinner className="size-6 text-primary" />
-      </div>
-    );
-  }
+  const equipes = estado.tipo === 'ok' ? estado.equipes : [];
 
   return (
     <>
@@ -70,9 +51,21 @@ export default function EquipesDeCampo() {
               {estado.tipo === 'ok' ? <Subtitulo equipes={estado.equipes} /> : 'Carregando equipes…'}
             </p>
           </div>
-          <Button size="lg" className="h-11 rounded-xl px-4 text-sm font-semibold" onClick={() => setNovaAberta(true)}>
-            <Plus /> Nova equipe
-          </Button>
+          {coordenador && (
+            <div className="flex flex-wrap gap-2">
+              <Button
+                size="lg"
+                variant="outline"
+                className="h-11 rounded-xl px-4 text-sm font-semibold"
+                onClick={() => setFuncionarioAberto(true)}
+              >
+                <UserPlus /> Novo funcionário
+              </Button>
+              <Button size="lg" className="h-11 rounded-xl px-4 text-sm font-semibold" onClick={() => setNovaAberta(true)}>
+                <Plus /> Nova equipe
+              </Button>
+            </div>
+          )}
         </header>
 
         <section className="mt-8" aria-label="Equipes">
@@ -102,7 +95,7 @@ export default function EquipesDeCampo() {
             <Aviso
               Icone={Users}
               titulo="Nenhuma equipe cadastrada"
-              texto="Cadastre a primeira equipe de campo pelo botão “Nova equipe”."
+              texto={coordenador ? 'Cadastre a primeira equipe de campo pelo botão “Nova equipe”.' : 'A coordenação ainda não cadastrou equipes.'}
             />
           )}
 
@@ -118,11 +111,18 @@ export default function EquipesDeCampo() {
 
       <ModalEquipe
         equipe={selecionada}
-        token={token}
+        equipes={equipes}
         onFechar={() => {
           setSelecionada(null);
           recarregar(); // os números do card podem ter mudado enquanto o modal estava aberto
         }}
+      />
+      <NovoFuncionario
+        aberto={funcionarioAberto}
+        token={token}
+        equipes={equipes}
+        onFechar={() => setFuncionarioAberto(false)}
+        onCriado={recarregar}
         onSessaoExpirada={sessaoExpirada}
       />
       <NovaEquipe

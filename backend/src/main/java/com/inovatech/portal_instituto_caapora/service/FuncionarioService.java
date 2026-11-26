@@ -55,6 +55,18 @@ public class FuncionarioService {
         return FuncionarioResponseDTO.fromEntity(funcionarioRepository.save(funcionario));
     }
 
+    // Coloca o funcionário numa equipe, troca de equipe ou tira de qualquer equipe (equipeId nulo).
+    // Separado do atualizar() para não exigir a senha só para mudar a equipe.
+    @Transactional
+    public FuncionarioResponseDTO definirEquipe(Long id, Long equipeId) {
+        FuncionarioEntity funcionario = buscarEntidade(id);
+        if (!Boolean.TRUE.equals(funcionario.getAtivo())) {
+            throw new RegraNegocioException("O funcionário " + funcionario.getNome() + " está desativado");
+        }
+        funcionario.setEquipe(equipeId != null ? equipeService.buscarEntidade(equipeId) : null);
+        return FuncionarioResponseDTO.fromEntity(funcionarioRepository.save(funcionario));
+    }
+
     // Exclusão lógica: o funcionário perde o acesso, mas o histórico
     // de ações dele é preservado (US 7.4.2, cenário 2)
     @Transactional

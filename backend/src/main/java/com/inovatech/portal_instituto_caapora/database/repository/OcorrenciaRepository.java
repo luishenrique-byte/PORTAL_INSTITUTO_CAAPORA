@@ -7,6 +7,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDateTime;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -21,15 +22,19 @@ public interface OcorrenciaRepository extends JpaRepository<OcorrenciaEntity, Lo
 
     List<OcorrenciaEntity> findByOcorrenciaStatus(OcorrenciaStatus status);
 
-    // Ocorrências ativas no painel do coordenador (US 7.4.1)
-    List<OcorrenciaEntity> findByOcorrenciaStatusNotOrderByDataHoraRegistroDesc(OcorrenciaStatus status);
+    // Ocorrências ativas no painel do coordenador (US 7.4.1): fora dos status finais
+    List<OcorrenciaEntity> findByOcorrenciaStatusNotInOrderByDataHoraRegistroDesc(Collection<OcorrenciaStatus> status);
 
     List<OcorrenciaEntity> findByGrauUrgencia(GrauUrgencia grauUrgencia);
 
     List<OcorrenciaEntity> findByEquipeId(Long equipeId);
 
-    // Contagens por equipe: em andamento (status diferente de CONCLUIDO) e concluídas
-    long countByEquipeIdAndOcorrenciaStatusNot(Long equipeId, OcorrenciaStatus status);
+    // Contagens por equipe: em andamento (fora dos status finais) e concluídas
+    long countByEquipeIdAndOcorrenciaStatusNotIn(Long equipeId, Collection<OcorrenciaStatus> status);
+
+    // Outras ocorrências ainda abertas da equipe (para saber se ela pode voltar a ficar livre)
+    long countByEquipeIdAndIdNotAndOcorrenciaStatusNotIn(Long equipeId, Long ocorrenciaId,
+                                                         Collection<OcorrenciaStatus> status);
 
     long countByEquipeIdAndOcorrenciaStatus(Long equipeId, OcorrenciaStatus status);
 
