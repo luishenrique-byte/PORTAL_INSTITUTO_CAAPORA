@@ -158,7 +158,7 @@ class OcorrenciaServiceTest {
         LocalDateTime agora = LocalDateTime.now();
         OcorrenciaEntity baixa = ocorrencia(10L, OcorrenciaStatus.REGISTRADA, GrauUrgencia.BAIXA, agora.minusHours(5));
         OcorrenciaEntity critica = ocorrencia(11L, OcorrenciaStatus.REGISTRADA, GrauUrgencia.CRITICA, agora);
-        when(ocorrenciaRepository.findByOcorrenciaStatusNotOrderByDataHoraRegistroDesc(OcorrenciaStatus.CONCLUIDO))
+        when(ocorrenciaRepository.findByOcorrenciaStatusNotInOrderByDataHoraRegistroDesc(OcorrenciaStatus.FINAIS))
                 .thenReturn(List.of(baixa, critica));
 
         List<OcorrenciaResponseDTO> fila = service.listarAtivas();
@@ -230,14 +230,42 @@ class OcorrenciaServiceTest {
     }
 
     @Test
-    void naoAtribuiEquipeOcupada() {
+    void concluirMantemEquipeOcupadaSeTiverOutrasOcorrenciasAbertas() {
+        EquipeEntity equipe = EquipeEntity.builder().id(5L).nome("Alfa").status(EquipeStatus.OCUPADO).build();
+        OcorrenciaEntity o = ocorrencia(10L, OcorrenciaStatus.RESGATE, GrauUrgencia.ALTA, LocalDateTime.now());
+        o.setEquipe(equipe);
+        when(ocorrenciaRepository.findById(10L)).thenReturn(Optional.of(o));
+        when(ocorrenciaRepository.countByEquipeIdAndIdNotAndOcorrenciaStatusNotIn(5L, 10L, OcorrenciaStatus.FINAIS))
+                .thenReturn(2L);
+
+        service.atualizarStatus(10L, new AtualizarStatusRequestDTO(OcorrenciaStatus.CONCLUIDO, 1L));
+
+        assertEquals(EquipeStatus.OCUPADO, equipe.getStatus());
+    }
+
+    @Test
+    void cancelarLiberaEquipeSemOutrasOcorrencias() {
+        EquipeEntity equipe = EquipeEntity.builder().id(5L).nome("Alfa").status(EquipeStatus.OCUPADO).build();
+        OcorrenciaEntity o = ocorrencia(10L, OcorrenciaStatus.ATENDIMENTO, GrauUrgencia.ALTA, LocalDateTime.now());
+        o.setEquipe(equipe);
+        when(ocorrenciaRepository.findById(10L)).thenReturn(Optional.of(o));
+
+        service.atualizarStatus(10L, new AtualizarStatusRequestDTO(OcorrenciaStatus.CANCELADO, 1L));
+
+        assertEquals(EquipeStatus.DISPONIVEL, equipe.getStatus());
+    }
+
+    @Test
+    void atribuiEquipeQueJaEstaOcupadaComOutraOcorrencia() {
         OcorrenciaEntity o = ocorrencia(10L, OcorrenciaStatus.TRIAGEM, GrauUrgencia.ALTA, LocalDateTime.now());
         EquipeEntity ocupada = EquipeEntity.builder().id(6L).nome("Beta").status(EquipeStatus.OCUPADO).build();
         when(ocorrenciaRepository.findById(10L)).thenReturn(Optional.of(o));
         when(equipeService.buscarEntidade(6L)).thenReturn(ocupada);
 
-        assertThrows(RegraNegocioException.class, () -> service.atribuirEquipe(10L, 6L, 1L));
-        assertNull(o.getEquipe());
+        service.atribuirEquipe(10L, 6L, 1L);
+
+        assertEquals(ocupada, o.getEquipe());
+        assertEquals(EquipeStatus.OCUPADO, ocupada.getStatus());
     }
 
     @Test

@@ -72,7 +72,7 @@ class EquipeServiceTest {
     void resumoTrazAsContagensDeCadaEquipe() {
         when(equipeRepository.findAll(Sort.by("id"))).thenReturn(List.of(alfa));
         when(funcionarioRepository.countByEquipeIdAndAtivoTrue(1L)).thenReturn(4L);
-        when(ocorrenciaRepository.countByEquipeIdAndOcorrenciaStatusNot(1L, OcorrenciaStatus.CONCLUIDO)).thenReturn(2L);
+        when(ocorrenciaRepository.countByEquipeIdAndOcorrenciaStatusNotIn(1L, OcorrenciaStatus.FINAIS)).thenReturn(2L);
         when(ocorrenciaRepository.countByEquipeIdAndOcorrenciaStatus(1L, OcorrenciaStatus.CONCLUIDO)).thenReturn(15L);
 
         EquipeResumoResponseDTO card = service.listarResumo().get(0);

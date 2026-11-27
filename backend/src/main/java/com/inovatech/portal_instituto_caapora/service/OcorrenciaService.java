@@ -171,7 +171,7 @@ public class OcorrenciaService {
     @Transactional(readOnly = true)
     public List<OcorrenciaResponseDTO> listarAtivas() {
         return ocorrenciaRepository
-                .findByOcorrenciaStatusNotOrderByDataHoraRegistroDesc(OcorrenciaStatus.CONCLUIDO)
+                .findByOcorrenciaStatusNotInOrderByDataHoraRegistroDesc(OcorrenciaStatus.FINAIS)
                 .stream()
                 .sorted(ORDEM_FILA)
                 .map(OcorrenciaResponseDTO::fromEntity)
@@ -235,9 +235,9 @@ public class OcorrenciaService {
         }
 
         ocorrencia.setOcorrenciaStatus(novo);
-        // Ao concluir, a equipe volta a ficar livre para novos chamados
-        if (novo == OcorrenciaStatus.CONCLUIDO && ocorrencia.getEquipe() != null) {
-            liberarEquipe(ocorrencia.getEquipe());
+        // Ao concluir ou cancelar, a equipe fica livre se não tiver outros chamados abertos
+        if (novo.isFinal() && ocorrencia.getEquipe() != null) {
+            liberarEquipeSeOciosa(ocorrencia.getEquipe(), ocorrencia.getId());
         }
         ocorrencia = ocorrenciaRepository.save(ocorrencia);
         registrarHistorico(ocorrencia, novo, responsavel);
@@ -284,6 +284,7 @@ public class OcorrenciaService {
     }
 
     // Vincula ou troca a equipe responsável (RF13, US 7.2.3).
+    // Uma equipe pode atender várias ocorrências ao mesmo tempo: fica OCUPADO enquanto tiver alguma aberta.
     // Tudo acontece numa única transação, então a ocorrência nunca fica sem equipe no meio da troca.
     @Transactional
     public OcorrenciaResponseDTO atribuirEquipe(Long ocorrenciaId, Long equipeId, Long funcionarioId) {
@@ -296,13 +297,8 @@ public class OcorrenciaService {
         if (anterior != null && anterior.getId().equals(nova.getId())) {
             return OcorrenciaResponseDTO.fromEntity(ocorrencia);
         }
-        // Só equipes disponíveis podem ser escolhidas (US 7.2.3, critério 2)
-        if (nova.getStatus() != EquipeStatus.DISPONIVEL) {
-            throw new RegraNegocioException("A equipe " + nova.getNome() + " está ocupada");
-        }
-
         if (anterior != null) {
-            liberarEquipe(anterior);
+            liberarEquipeSeOciosa(anterior, ocorrencia.getId());
         }
         nova.setStatus(EquipeStatus.OCUPADO);
         equipeRepository.save(nova);
@@ -327,9 +323,14 @@ public class OcorrenciaService {
         }
     }
 
-    private void liberarEquipe(EquipeEntity equipe) {
-        equipe.setStatus(EquipeStatus.DISPONIVEL);
-        equipeRepository.save(equipe);
+    // A equipe só volta a DISPONIVEL quando não sobra nenhuma outra ocorrência aberta com ela
+    private void liberarEquipeSeOciosa(EquipeEntity equipe, Long ocorrenciaIgnorada) {
+        long outrasAbertas = ocorrenciaRepository.countByEquipeIdAndIdNotAndOcorrenciaStatusNotIn(
+                equipe.getId(), ocorrenciaIgnorada, OcorrenciaStatus.FINAIS);
+        if (outrasAbertas == 0) {
+            equipe.setStatus(EquipeStatus.DISPONIVEL);
+            equipeRepository.save(equipe);
+        }
     }
 
     private void registrarHistorico(OcorrenciaEntity ocorrencia, OcorrenciaStatus status,

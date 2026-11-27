@@ -342,14 +342,18 @@ export function ModalDetalheOcorrencia({
                     <option value="">
                       {ocorrencia.equipe?.nome || "Selecionar equipe..."}
                     </option>
-                    {equipes
-                      .filter((eq) => eq.status === "DISPONIVEL" || eq.id === ocorrencia.equipe?.id)
+                    {/* Uma equipe pode atender várias ocorrências: as ocupadas também aparecem, depois das livres */}
+                    {[...equipes]
+                      .sort((a, b) => Number(a.status !== "DISPONIVEL") - Number(b.status !== "DISPONIVEL"))
                       .map((eq) => (
                         <option key={eq.id} value={eq.id}>
-                          {eq.nome} ({eq.status === "DISPONIVEL" ? "Disponível" : "Ocupada"})
+                          {eq.nome} ({eq.status === "DISPONIVEL" ? "Livre" : "Já em atendimento"})
                         </option>
                       ))}
                   </select>
+                  <p className="mt-1 text-xs text-slate-500">
+                    A mesma equipe pode ficar com mais de uma ocorrência.
+                  </p>
                 </div>
               </div>
             </section>

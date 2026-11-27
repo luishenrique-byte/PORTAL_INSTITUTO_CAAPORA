@@ -1,8 +1,9 @@
-﻿"use client";
+"use client";
 
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
 import {
+  Archive,
+  Inbox,
   Search,
   LayoutGrid,
   Table as TableIcon,
@@ -18,7 +19,6 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Spinner } from "@/components/ui/spinner";
 import {
   Table,
   TableBody,
@@ -28,7 +28,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { API_URL } from "@/lib/api";
-import { encerrarSessao, obterToken } from "@/lib/sessao";
+import { useSessaoPainel } from "../_components/UsuarioContexto";
 import {
   OcorrenciaAdmin,
   OcorrenciaManualRequest,
@@ -41,10 +41,16 @@ import {
 import { ModalDetalheOcorrencia } from "./_components/ModalDetalheOcorrencia";
 import { ModalCadastroOcorrencia } from "./_components/ModalCadastroOcorrencia";
 
+// Concluídas e canceladas saem da lista principal e ficam na aba "Arquivadas"
+const STATUS_ARQUIVADOS: OcorrenciaAdmin["ocorrenciaStatus"][] = ["CONCLUIDO", "CANCELADO"];
+const estaArquivada = (oc: OcorrenciaAdmin) => STATUS_ARQUIVADOS.includes(oc.ocorrenciaStatus);
+
+type Aba = "ativas" | "arquivadas";
+
 export default function GerenciamentoOcorrenciasPage() {
-  const router = useRouter();
-  const [token, setToken] = useState<string | null>(null);
-  const [funcionarioId, setFuncionarioId] = useState<number>(1);
+  const { token, usuario, sair: sessaoExpirada } = useSessaoPainel();
+  const funcionarioId = usuario.id;
+  const [aba, setAba] = useState<Aba>("ativas");
   const [ocorrencias, setOcorrencias] = useState<OcorrenciaAdmin[]>([]);
   const [carregando, setCarregando] = useState(true);
   const [modoVisualizacao, setModoVisualizacao] = useState<"cards" | "tabela">("cards");
@@ -54,40 +60,6 @@ export default function GerenciamentoOcorrenciasPage() {
   const [filtroMunicipio, setFiltroMunicipio] = useState("TODOS");
   const [ocorrenciaSelecionadaId, setOcorrenciaSelecionadaId] = useState<number | null>(null);
   const [modalCadastroAberto, setModalCadastroAberto] = useState(false);
-
-  useEffect(() => {
-    const t = obterToken();
-    // O layout do painel já redireciona quem não tem sessão
-    if (!t) return;
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- localStorage só existe no navegador
-    setToken(t);
-
-    try {
-      const payload = JSON.parse(atob(t.split(".")[1]));
-      const emailLogado = payload?.sub;
-      if (emailLogado) {
-        fetch(`${API_URL}/funcionarios`, {
-          headers: { Authorization: `Bearer ${t}` },
-          cache: "no-store",
-        })
-          .then((res) => (res.ok ? res.json() : []))
-          .then((lista: { id: number; email?: string }[]) => {
-            const encontrado = lista.find(
-              (f) => f.email?.toLowerCase() === String(emailLogado).toLowerCase()
-            );
-            if (encontrado?.id) setFuncionarioId(encontrado.id);
-          })
-          .catch(() => {});
-      }
-    } catch {
-      // mantém fallback id = 1
-    }
-  }, [router]);
-
-  const sessaoExpirada = useCallback(() => {
-    encerrarSessao();
-    router.replace("/admin/login");
-  }, [router]);
 
   const buscarOcorrencias = useCallback(
     async (t: string, signal?: AbortSignal) => {
@@ -108,7 +80,6 @@ export default function GerenciamentoOcorrenciasPage() {
   );
 
   useEffect(() => {
-    if (!token) return;
     const controle = new AbortController();
 
     buscarOcorrencias(token, controle.signal)
@@ -128,24 +99,19 @@ export default function GerenciamentoOcorrenciasPage() {
   }, [token, buscarOcorrencias]);
 
   const carregarOcorrencias = useCallback(async () => {
-    const t = obterToken();
-    if (!t) {
-      sessaoExpirada();
-      return;
-    }
     setCarregando(true);
     try {
-      const lista = await buscarOcorrencias(t);
+      const lista = await buscarOcorrencias(token);
       if (lista) setOcorrencias(lista);
     } catch {
       toast.error("Não foi possível carregar as ocorrências.");
     } finally {
       setCarregando(false);
     }
-  }, [buscarOcorrencias, sessaoExpirada]);
+  }, [buscarOcorrencias, token]);
 
   async function handleSalvarOcorrencia(dados: OcorrenciaManualRequest): Promise<boolean> {
-    const t = obterToken();
+    const t = token;
     try {
       const res = await fetch(`${API_URL}/ocorrencias/manual?funcionarioId=${funcionarioId}`, {
         method: "POST",
@@ -188,6 +154,7 @@ export default function GerenciamentoOcorrenciasPage() {
   const ocorrenciasFiltradas = useMemo(() => {
     const termo = busca.trim().toLowerCase();
     return ocorrencias.filter((oc) => {
+      if (estaArquivada(oc) !== (aba === "arquivadas")) return false;
       if (filtroStatus !== "TODOS" && oc.ocorrenciaStatus !== filtroStatus) return false;
       if (filtroUrgencia !== "TODAS" && oc.grauUrgencia !== filtroUrgencia) return false;
       if (filtroMunicipio !== "TODOS") {
@@ -208,7 +175,15 @@ export default function GerenciamentoOcorrenciasPage() {
         .toLowerCase();
       return texto.includes(termo);
     });
-  }, [ocorrencias, busca, filtroStatus, filtroUrgencia, filtroMunicipio]);
+  }, [ocorrencias, aba, busca, filtroStatus, filtroUrgencia, filtroMunicipio]);
+
+  const totalArquivadas = useMemo(() => ocorrencias.filter(estaArquivada).length, [ocorrencias]);
+  const totalAtivas = ocorrencias.length - totalArquivadas;
+
+  function trocarAba(nova: Aba) {
+    setAba(nova);
+    setFiltroStatus("TODOS"); // os status de cada aba são diferentes
+  }
 
   const ocorrenciaSelecionada = useMemo(
     () => ocorrencias.find((oc) => oc.id === ocorrenciaSelecionadaId) ?? null,
@@ -220,14 +195,6 @@ export default function GerenciamentoOcorrenciasPage() {
     setFiltroStatus("TODOS");
     setFiltroUrgencia("TODAS");
     setFiltroMunicipio("TODOS");
-  }
-
-  if (!token) {
-    return (
-      <div className="flex min-h-[50dvh] items-center justify-center">
-        <Spinner className="size-6 text-primary" />
-      </div>
-    );
   }
 
   return (
@@ -257,6 +224,45 @@ export default function GerenciamentoOcorrenciasPage() {
           </Button>
         </header>
 
+        <div role="tablist" aria-label="Situação das ocorrências" className="flex gap-1 border-b border-slate-200">
+          {([
+            { valor: "ativas", rotulo: "Ativas", total: totalAtivas, Icone: Inbox },
+            { valor: "arquivadas", rotulo: "Arquivadas", total: totalArquivadas, Icone: Archive },
+          ] as const).map(({ valor, rotulo, total, Icone }) => {
+            const ativa = aba === valor;
+            return (
+              <button
+                key={valor}
+                type="button"
+                role="tab"
+                aria-selected={ativa}
+                onClick={() => trocarAba(valor)}
+                className={`-mb-px inline-flex items-center gap-2 border-b-2 px-4 py-2.5 text-sm font-medium transition-colors ${
+                  ativa
+                    ? "border-emerald-700 text-emerald-800"
+                    : "border-transparent text-slate-500 hover:text-slate-800"
+                }`}
+              >
+                <Icone className="h-4 w-4" />
+                {rotulo}
+                <span
+                  className={`rounded-full px-2 py-0.5 text-xs tabular-nums ${
+                    ativa ? "bg-emerald-100 text-emerald-800" : "bg-slate-100 text-slate-600"
+                  }`}
+                >
+                  {total}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+
+        {aba === "arquivadas" && (
+          <p className="-mt-2 text-sm text-slate-500">
+            Ocorrências concluídas e canceladas. Ficam aqui para consulta e não aparecem mais na fila de atendimento.
+          </p>
+        )}
+
         <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-xs space-y-3">
           <div className="flex flex-col lg:flex-row gap-3">
             <div className="relative flex-1">
@@ -277,11 +283,15 @@ export default function GerenciamentoOcorrenciasPage() {
                 className="h-9 rounded-md border border-slate-300 bg-white px-3 text-sm"
               >
                 <option value="TODOS">Todos os status</option>
-                {Object.entries(STATUS_CONFIG).map(([key, cfg]) => (
-                  <option key={key} value={key}>
-                    {cfg.label}
-                  </option>
-                ))}
+                {Object.entries(STATUS_CONFIG)
+                  .filter(([key]) =>
+                    STATUS_ARQUIVADOS.includes(key as OcorrenciaAdmin["ocorrenciaStatus"]) === (aba === "arquivadas")
+                  )
+                  .map(([key, cfg]) => (
+                    <option key={key} value={key}>
+                      {cfg.label}
+                    </option>
+                  ))}
               </select>
 
               <select
@@ -361,9 +371,13 @@ export default function GerenciamentoOcorrenciasPage() {
           <div className="text-center py-12 text-slate-500">Carregando ocorrências...</div>
         ) : ocorrenciasFiltradas.length === 0 ? (
           <div className="bg-white rounded-xl border border-slate-200 p-12 text-center space-y-2">
-            <p className="font-medium text-slate-800">Nenhuma ocorrência encontrada</p>
+            <p className="font-medium text-slate-800">
+              {aba === "arquivadas" ? "Nenhuma ocorrência arquivada" : "Nenhuma ocorrência encontrada"}
+            </p>
             <p className="text-sm text-slate-500">
-              Tente ajustar os filtros ou registre um novo chamado.
+              {aba === "arquivadas"
+                ? "As ocorrências concluídas ou canceladas aparecem aqui."
+                : "Tente ajustar os filtros ou registre um novo chamado."}
             </p>
           </div>
         ) : modoVisualizacao === "cards" ? (

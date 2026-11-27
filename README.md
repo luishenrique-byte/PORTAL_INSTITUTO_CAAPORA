@@ -45,10 +45,11 @@ os chamados de resgate em um só lugar, com registro padronizado e retorno para 
 
 O backend já oferece as APIs; as telas do painel estão desenhadas no Figma e em desenvolvimento.
 
-- **Login** com JWT e perfis de acesso (`COORDENADOR`, `ATENDENTE`, `EQUIPE_CAMPO`)
-- **Ocorrências:** lista, filtros, cadastro manual (chamados por telefone), mudança de status e urgência, atribuição de equipe e histórico
+- **Login** com JWT (sessão de 8 horas) e perfis de acesso (`COORDENADOR`, `ATENDENTE`, `EQUIPE_CAMPO`)
+- **Ocorrências:** lista com abas **Ativas** e **Arquivadas** (concluídas e canceladas), filtros, cadastro manual (chamados por telefone), mudança de status e urgência, atribuição de equipe e histórico
 - **Dashboard:** totais, distribuição por status, categoria e mês, e **mapa de calor** das ocorrências
-- **Equipes e funcionários:** cadastro, disponibilidade e detalhes
+- **Equipes e funcionários:** cadastro de equipes e de funcionários, inclusão e remoção de membros, e vínculo de várias ocorrências à mesma equipe
+- **Minha equipe** (perfil `EQUIPE_CAMPO`): só os atendimentos da própria equipe, com atalho para o mapa e botões para iniciar e concluir o resgate
 - **Relatórios** por período
 
 ### Como um resgate anda
@@ -68,7 +69,7 @@ consulta pelo protocolo.
 | **Frontend** | Next.js 16 (App Router), React 19, TypeScript, Tailwind CSS 4, shadcn/ui (Radix), Lucide |
 | **Backend** | Java 17, Spring Boot 4 (Web MVC, Data JPA, Validation, Security), JWT (JJWT), springdoc-openapi, Lombok |
 | **Banco de dados** | PostgreSQL 17 |
-| **Infraestrutura** | Docker, Docker Compose, Easypanel |
+| **Infraestrutura** | Docker |
 
 ## Arquitetura
 
@@ -173,6 +174,8 @@ A documentação completa e interativa fica no **Swagger** (`/swagger-ui/index.h
 | `GET` | `/ocorrencias`, `/ocorrencias/filtro` | equipe | Lista e filtra ocorrências |
 | `PATCH` | `/ocorrencias/{id}/status`, `/urgencia`, `/equipe` | equipe | Atualiza o atendimento |
 | `GET` | `/dashboard/*` | atendente, coordenador | Indicadores e mapa de calor |
+| `GET` | `/auth/me` | equipe | Dados de quem está logado (perfil e equipe) |
+| `PATCH` | `/funcionarios/{id}/equipe?equipeId=` | coordenador | Coloca o funcionário numa equipe (sem `equipeId`, tira da equipe) |
 | `*` | `/equipes`, `/funcionarios`, `/perfis` | coordenador | Gestão da equipe |
 
 ## Configuração
@@ -183,6 +186,7 @@ Todas as variáveis estão descritas em [`.env.example`](.env.example). As princ
 |---|---|
 | `DB_PASSWORD` | Senha do PostgreSQL |
 | `JWT_KEY` | Chave de assinatura dos tokens (obrigatória fora do ambiente local) |
+| `JWT_EXPIRATION` | Validade do login em ms (padrão 8 horas: `28800000`) |
 | `NEXT_PUBLIC_API_URL` | URL pública da API usada pelo navegador (gravada no build do frontend) |
 | `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` | Chave do Google Maps usada pelo navegador na tela Mapa de Calor (gravada no build do frontend) |
 | `CORS_ALLOWED_ORIGINS` | Endereços do site autorizados a chamar a API |
