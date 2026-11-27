@@ -172,7 +172,11 @@ export interface OcorrenciaInterna {
   endereco: string | null;
   pontoReferencia: string | null;
   ocorrenciaStatus: OcorrenciaStatus;
-  animal: { especie: string | null; categoriaAnimal: CategoriaAnimal } | null;
+  animal: { especie: string | null; categoriaAnimal: CategoriaAnimal; saudeStatus?: SaudeStatus | null } | null;
+  latitude?: number | null;
+  longitude?: number | null;
+  descricao?: string | null;
+  grauUrgencia?: 'CRITICA' | 'ALTA' | 'MEDIA' | 'BAIXA' | null;
 }
 
 // GET /equipes/{id}/detalhe: modal da equipe
@@ -182,7 +186,7 @@ export interface EquipeDetalhe {
   regiao: string | null;
   telefone: string | null;
   status: EquipeStatus;
-  membros: { id: number; nome: string }[];
+  membros: { id: number; nome: string; email?: string; perfil?: { id: number; perfil: string } | null }[];
   resgatesEmAndamento: OcorrenciaInterna[];
   historicoRecente: OcorrenciaInterna[]; // os últimos concluídos
   totalConcluidos: number;
@@ -210,6 +214,101 @@ export function detalharEquipe(id: number, token: string, signal?: AbortSignal) 
     headers: comToken(token),
     cache: 'no-store',
     signal,
+  });
+}
+
+// ---------- Usuário logado, perfis e funcionários (painel) ----------
+
+export type PerfilAcesso = 'COORDENADOR' | 'ATENDENTE' | 'EQUIPE_CAMPO';
+
+// GET /auth/me
+export interface UsuarioLogado {
+  id: number;
+  nome: string;
+  email: string;
+  perfil: PerfilAcesso | string;
+  equipeId: number | null;
+  nomeEquipe: string | null;
+}
+
+export function obterUsuarioLogado(token: string, signal?: AbortSignal) {
+  return requisitar<UsuarioLogado>('/auth/me', { headers: comToken(token), cache: 'no-store', signal });
+}
+
+export interface Perfil {
+  id: number;
+  perfil: string;
+}
+
+// GET /perfis (só COORDENADOR)
+export function listarPerfis(token: string, signal?: AbortSignal) {
+  return requisitar<Perfil[]>('/perfis', { headers: comToken(token), cache: 'no-store', signal });
+}
+
+export interface Funcionario {
+  id: number;
+  nome: string;
+  email: string;
+  perfil: Perfil | null;
+  equipe: { id: number; nome: string } | null;
+  ativo: boolean;
+}
+
+export interface NovoFuncionarioRequest {
+  nome: string;
+  email: string;
+  senha: string;
+  perfilId: number;
+  equipeId: number | null;
+}
+
+// GET /funcionarios: só os ativos (só COORDENADOR)
+export function listarFuncionarios(token: string, signal?: AbortSignal) {
+  return requisitar<Funcionario[]>('/funcionarios', { headers: comToken(token), cache: 'no-store', signal });
+}
+
+export function criarFuncionario(dados: NovoFuncionarioRequest, token: string) {
+  return requisitar<Funcionario>('/funcionarios', {
+    method: 'POST',
+    headers: { ...comToken(token), 'Content-Type': 'application/json' },
+    body: JSON.stringify(dados),
+  });
+}
+
+// PATCH /funcionarios/{id}/equipe: coloca na equipe ou, com equipeId nulo, tira de qualquer equipe
+export function definirEquipeDoFuncionario(funcionarioId: number, equipeId: number | null, token: string) {
+  const query = equipeId === null ? '' : `?equipeId=${equipeId}`;
+  return requisitar<Funcionario>(`/funcionarios/${funcionarioId}/equipe${query}`, {
+    method: 'PATCH',
+    headers: comToken(token),
+  });
+}
+
+// ---------- Ocorrências (painel) ----------
+
+// GET /ocorrencias: fila em aberto (sem concluídas e canceladas)
+export function listarOcorrenciasEmAberto(token: string, signal?: AbortSignal) {
+  return requisitar<(OcorrenciaInterna & { equipe: { id: number; nome: string } | null })[]>('/ocorrencias', {
+    headers: comToken(token),
+    cache: 'no-store',
+    signal,
+  });
+}
+
+// PATCH /ocorrencias/{id}/equipe: a mesma equipe pode ficar com várias ocorrências
+export function vincularEquipe(ocorrenciaId: number, equipeId: number, funcionarioId: number, token: string) {
+  return requisitar<OcorrenciaInterna>(
+    `/ocorrencias/${ocorrenciaId}/equipe?equipeId=${equipeId}&funcionarioId=${funcionarioId}`,
+    { method: 'PATCH', headers: comToken(token) },
+  );
+}
+
+// PATCH /ocorrencias/{id}/status: a linha do tempo só anda para frente
+export function avancarStatus(ocorrenciaId: number, status: OcorrenciaStatus, responsavelId: number, token: string) {
+  return requisitar<OcorrenciaInterna>(`/ocorrencias/${ocorrenciaId}/status`, {
+    method: 'PATCH',
+    headers: { ...comToken(token), 'Content-Type': 'application/json' },
+    body: JSON.stringify({ status, responsavelId }),
   });
 }
 

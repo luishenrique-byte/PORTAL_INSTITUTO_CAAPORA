@@ -79,7 +79,7 @@ public class EquipeService {
                         e.getTelefone(),
                         e.getStatus(),
                         funcionarioRepository.countByEquipeIdAndAtivoTrue(e.getId()),
-                        ocorrenciaRepository.countByEquipeIdAndOcorrenciaStatusNot(e.getId(), OcorrenciaStatus.CONCLUIDO),
+                        ocorrenciaRepository.countByEquipeIdAndOcorrenciaStatusNotIn(e.getId(), OcorrenciaStatus.FINAIS),
                         ocorrenciaRepository.countByEquipeIdAndOcorrenciaStatus(e.getId(), OcorrenciaStatus.CONCLUIDO)))
                 .toList();
     }
@@ -102,7 +102,7 @@ public class EquipeService {
 
         List<OcorrenciaEntity> ocorrencias = ocorrenciaRepository.findByEquipeId(id);
         List<OcorrenciaResponseDTO> emAndamento = ocorrencias.stream()
-                .filter(o -> o.getOcorrenciaStatus() != OcorrenciaStatus.CONCLUIDO)
+                .filter(o -> !o.getOcorrenciaStatus().isFinal())
                 .map(OcorrenciaResponseDTO::fromEntity)
                 .toList();
         List<OcorrenciaEntity> concluidas = ocorrencias.stream()

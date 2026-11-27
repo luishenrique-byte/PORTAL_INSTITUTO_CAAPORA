@@ -1,7 +1,8 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { CircleAlert, RotateCw, X } from 'lucide-react';
+import { useCallback, useEffect, useState } from 'react';
+import { CircleAlert, Link2, RotateCw, UserMinus, UserPlus, X } from 'lucide-react';
+import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -13,8 +14,21 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Skeleton } from '@/components/ui/skeleton';
-import { ApiError, detalharEquipe, type EquipeDetalhe, type EquipeResumo, type OcorrenciaInterna } from '@/lib/api';
+import {
+  ApiError,
+  definirEquipeDoFuncionario,
+  detalharEquipe,
+  listarFuncionarios,
+  listarOcorrenciasEmAberto,
+  vincularEquipe,
+  type EquipeDetalhe,
+  type EquipeResumo,
+  type OcorrenciaInterna,
+} from '@/lib/api';
 import { rotuloStatus } from '@/lib/ocorrencia';
+import { ehCoordenador, ehEquipeDeCampo, useSessaoPainel } from '../../_components/UsuarioContexto';
+import { NovoFuncionario } from './NovoFuncionario';
+import { SelecionarItens, type ItemSelecionavel } from './SelecionarItens';
 import { BadgeStatusEquipe, localOcorrencia, nomeAnimal, plural } from './visual';
 
 type Estado =
@@ -22,14 +36,19 @@ type Estado =
   | { tipo: 'ok'; dados: EquipeDetalhe }
   | { tipo: 'erro'; mensagem: string };
 
+const ROTULO_PERFIL: Record<string, string> = {
+  COORDENADOR: 'Coordenador',
+  ATENDENTE: 'Atendente',
+  EQUIPE_CAMPO: 'Equipe de campo',
+};
+
 interface Props {
   equipe: EquipeResumo | null; // null = modal fechado
-  token: string;
+  equipes: EquipeResumo[]; // para o cadastro de funcionário escolher a equipe
   onFechar: () => void;
-  onSessaoExpirada: () => void;
 }
 
-export function ModalEquipe({ equipe, token, onFechar, onSessaoExpirada }: Props) {
+export function ModalEquipe({ equipe, equipes, onFechar }: Props) {
   return (
     <Dialog open={equipe !== null} onOpenChange={(aberto) => !aberto && onFechar()}>
       <DialogContent
@@ -38,7 +57,7 @@ export function ModalEquipe({ equipe, token, onFechar, onSessaoExpirada }: Props
       >
         {equipe && (
           // key: ao trocar de equipe o conteúdo recomeça do zero (busca os dados de novo)
-          <Conteudo key={equipe.id} equipe={equipe} token={token} onSessaoExpirada={onSessaoExpirada} />
+          <Conteudo key={equipe.id} equipe={equipe} equipes={equipes} />
         )}
         <DialogClose asChild>
           <Button variant="ghost" size="icon-sm" className="absolute top-4 right-4" aria-label="Fechar">
@@ -50,9 +69,32 @@ export function ModalEquipe({ equipe, token, onFechar, onSessaoExpirada }: Props
   );
 }
 
-function Conteudo({ equipe, token, onSessaoExpirada }: Omit<Props, 'equipe' | 'onFechar'> & { equipe: EquipeResumo }) {
+// Junta as falhas de uma ação em lote numa mensagem só
+async function emLote(ids: number[], acao: (id: number) => Promise<unknown>) {
+  const falhas: string[] = [];
+  for (const id of ids) {
+    try {
+      await acao(id);
+    } catch (e) {
+      if (e instanceof ApiError && e.status === 401) throw e;
+      falhas.push(e instanceof ApiError ? e.message : 'erro inesperado');
+    }
+  }
+  return falhas;
+}
+
+function Conteudo({ equipe, equipes }: { equipe: EquipeResumo; equipes: EquipeResumo[] }) {
+  const { token, usuario, sair } = useSessaoPainel();
   const [estado, setEstado] = useState<Estado>({ tipo: 'carregando' });
   const [tentativa, setTentativa] = useState(0);
+  const [aberto, setAberto] = useState<null | 'membros' | 'ocorrencias' | 'novo'>(null);
+  const [itens, setItens] = useState<ItemSelecionavel[] | null>(null);
+  const [erroItens, setErroItens] = useState<string | null>(null);
+  const [removendo, setRemovendo] = useState<number | null>(null);
+
+  const podeGerirMembros = ehCoordenador(usuario);
+  const podeVincular = !ehEquipeDeCampo(usuario);
+  const recarregar = useCallback(() => setTentativa((t) => t + 1), []);
 
   // Busca os dados sempre que o modal abre, para mostrar a situação atual da equipe
   useEffect(() => {
@@ -61,11 +103,81 @@ function Conteudo({ equipe, token, onSessaoExpirada }: Omit<Props, 'equipe' | 'o
       .then((dados) => setEstado({ tipo: 'ok', dados }))
       .catch((e) => {
         if (controle.signal.aborted) return;
-        if (e instanceof ApiError && e.status === 401) return onSessaoExpirada();
+        if (e instanceof ApiError && e.status === 401) return sair();
         setEstado({ tipo: 'erro', mensagem: e instanceof ApiError ? e.message : 'Erro inesperado.' });
       });
     return () => controle.abort();
-  }, [equipe.id, token, tentativa, onSessaoExpirada]);
+  }, [equipe.id, token, tentativa, sair]);
+
+  // Lista do modal de seleção: funcionários de fora da equipe ou ocorrências em aberto de outras equipes
+  useEffect(() => {
+    if (aberto !== 'membros' && aberto !== 'ocorrencias') return;
+    const controle = new AbortController();
+    const carga =
+      aberto === 'membros'
+        ? listarFuncionarios(token, controle.signal).then((lista) =>
+            lista
+              .filter((f) => f.equipe?.id !== equipe.id)
+              .map<ItemSelecionavel>((f) => ({
+                id: f.id,
+                titulo: f.nome,
+                detalhe: `${ROTULO_PERFIL[f.perfil?.perfil ?? ''] ?? f.perfil?.perfil ?? 'Sem perfil'} · ${f.email}`,
+                observacao: f.equipe ? `Hoje na ${f.equipe.nome}: será transferido` : undefined,
+              })),
+          )
+        : listarOcorrenciasEmAberto(token, controle.signal).then((lista) =>
+            lista
+              .filter((o) => o.equipe?.id !== equipe.id)
+              .map<ItemSelecionavel>((o) => ({
+                id: o.id,
+                titulo: o.protocolo,
+                detalhe: `${nomeAnimal(o)} — ${localOcorrencia(o)} · ${rotuloStatus(o.ocorrenciaStatus)}`,
+                observacao: o.equipe ? `Hoje com a ${o.equipe.nome}: será transferida` : undefined,
+              })),
+          );
+    carga
+      .then(setItens)
+      .catch((e) => {
+        if (controle.signal.aborted) return;
+        if (e instanceof ApiError && e.status === 401) return sair();
+        setErroItens(e instanceof ApiError ? e.message : 'Não foi possível carregar a lista.');
+      });
+    return () => controle.abort();
+  }, [aberto, equipe.id, token, sair]);
+
+  function abrir(qual: 'membros' | 'ocorrencias' | 'novo') {
+    setItens(null);
+    setErroItens(null);
+    setAberto(qual);
+  }
+
+  async function adicionarMembros(ids: number[]) {
+    const falhas = await emLote(ids, (id) => definirEquipeDoFuncionario(id, equipe.id, token)).catch(() => sair());
+    recarregar();
+    if (falhas && falhas.length) throw new Error(`${falhas.length} não puderam ser adicionados: ${falhas[0]}`);
+    toast.success(`${plural(ids.length, 'pessoa adicionada', 'pessoas adicionadas')} à ${equipe.nome}.`);
+  }
+
+  async function vincularOcorrencias(ids: number[]) {
+    const falhas = await emLote(ids, (id) => vincularEquipe(id, equipe.id, usuario.id, token)).catch(() => sair());
+    recarregar();
+    if (falhas && falhas.length) throw new Error(`${falhas.length} não puderam ser vinculadas: ${falhas[0]}`);
+    toast.success(`${plural(ids.length, 'ocorrência vinculada', 'ocorrências vinculadas')} à ${equipe.nome}.`);
+  }
+
+  async function removerMembro(id: number, nome: string) {
+    setRemovendo(id);
+    try {
+      await definirEquipeDoFuncionario(id, null, token);
+      toast.success(`${nome} saiu da ${equipe.nome}.`);
+      recarregar();
+    } catch (e) {
+      if (e instanceof ApiError && e.status === 401) return sair();
+      toast.error(e instanceof ApiError ? e.message : 'Não foi possível remover agora.');
+    } finally {
+      setRemovendo(null);
+    }
+  }
 
   // Enquanto carrega, o cabeçalho já mostra o que veio do card
   const dados = estado.tipo === 'ok' ? estado.dados : null;
@@ -96,7 +208,7 @@ function Conteudo({ equipe, token, onSessaoExpirada }: Omit<Props, 'equipe' | 'o
               className="mt-3"
               onClick={() => {
                 setEstado({ tipo: 'carregando' });
-                setTentativa((t) => t + 1);
+                recarregar();
               }}
             >
               <RotateCw /> Tentar de novo
@@ -117,7 +229,61 @@ function Conteudo({ equipe, token, onSessaoExpirada }: Omit<Props, 'equipe' | 'o
               <Resumo rotulo="Histórico total">{dados.totalConcluidos}</Resumo>
             </div>
 
-            <Secao titulo={`Em atendimento (${dados.resgatesEmAndamento.length})`}>
+            <Secao
+              titulo={`Membros (${dados.membros.length})`}
+              acao={
+                podeGerirMembros && (
+                  <Button variant="outline" size="sm" onClick={() => abrir('membros')}>
+                    <UserPlus /> Adicionar
+                  </Button>
+                )
+              }
+            >
+              {dados.membros.length === 0 ? (
+                <Vazio texto="Ninguém nesta equipe ainda." />
+              ) : (
+                dados.membros.map((m) => (
+                  <li key={m.id} className="flex items-center justify-between gap-3 rounded-xl border border-border/60 px-4 py-2.5">
+                    <div className="flex min-w-0 items-center gap-3">
+                      <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-muted text-xs font-semibold uppercase text-foreground">
+                        {m.nome.trim().charAt(0)}
+                      </span>
+                      <div className="min-w-0">
+                        <p className="truncate text-sm font-semibold text-foreground">{m.nome}</p>
+                        <p className="truncate text-xs text-muted-foreground">
+                          {ROTULO_PERFIL[m.perfil?.perfil ?? ''] ?? m.perfil?.perfil ?? ''}
+                          {m.email ? ` · ${m.email}` : ''}
+                        </p>
+                      </div>
+                    </div>
+                    {podeGerirMembros && (
+                      <Button
+                        variant="ghost"
+                        size="icon-sm"
+                        aria-label={`Tirar ${m.nome} da equipe`}
+                        title="Tirar da equipe"
+                        disabled={removendo === m.id}
+                        onClick={() => removerMembro(m.id, m.nome)}
+                        className="text-muted-foreground hover:text-destructive"
+                      >
+                        <UserMinus />
+                      </Button>
+                    )}
+                  </li>
+                ))
+              )}
+            </Secao>
+
+            <Secao
+              titulo={`Em atendimento (${dados.resgatesEmAndamento.length})`}
+              acao={
+                podeVincular && (
+                  <Button variant="outline" size="sm" onClick={() => abrir('ocorrencias')}>
+                    <Link2 /> Vincular ocorrências
+                  </Button>
+                )
+              }
+            >
               {dados.resgatesEmAndamento.length === 0 ? (
                 <Vazio texto="Nenhuma ocorrência em andamento." />
               ) : (
@@ -147,6 +313,45 @@ function Conteudo({ equipe, token, onSessaoExpirada }: Omit<Props, 'equipe' | 'o
           </>
         )}
       </div>
+
+      <SelecionarItens
+        aberto={aberto === 'membros'}
+        titulo="Adicionar membros"
+        descricao={`Escolha quem passa a fazer parte da ${equipe.nome}.`}
+        itens={aberto === 'membros' ? itens : null}
+        erroCarga={erroItens}
+        textoVazio="Todos os funcionários ativos já estão nesta equipe."
+        rotuloAcao={(n) => (n > 1 ? `Adicionar ${n} pessoas` : 'Adicionar')}
+        rodape={
+          <button type="button" className="font-medium text-primary underline-offset-4 hover:underline" onClick={() => abrir('novo')}>
+            Cadastrar novo funcionário
+          </button>
+        }
+        onFechar={() => setAberto(null)}
+        onConfirmar={adicionarMembros}
+      />
+
+      <SelecionarItens
+        aberto={aberto === 'ocorrencias'}
+        titulo="Vincular ocorrências"
+        descricao={`Marque uma ou mais ocorrências em aberto para a ${equipe.nome} atender.`}
+        itens={aberto === 'ocorrencias' ? itens : null}
+        erroCarga={erroItens}
+        textoVazio="Não há ocorrências em aberto fora desta equipe."
+        rotuloAcao={(n) => (n > 1 ? `Vincular ${n} ocorrências` : 'Vincular')}
+        onFechar={() => setAberto(null)}
+        onConfirmar={vincularOcorrencias}
+      />
+
+      <NovoFuncionario
+        aberto={aberto === 'novo'}
+        token={token}
+        equipes={equipes}
+        equipeInicial={equipe.id}
+        onFechar={() => setAberto(null)}
+        onCriado={recarregar}
+        onSessaoExpirada={sair}
+      />
     </>
   );
 }
@@ -160,10 +365,13 @@ function Resumo({ rotulo, children }: { rotulo: string; children: React.ReactNod
   );
 }
 
-function Secao({ titulo, children }: { titulo: string; children: React.ReactNode }) {
+function Secao({ titulo, acao, children }: { titulo: string; acao?: React.ReactNode; children: React.ReactNode }) {
   return (
     <section>
-      <h3 className="mb-2.5 text-xs font-semibold tracking-wider text-muted-foreground uppercase">{titulo}</h3>
+      <div className="mb-2.5 flex min-h-8 items-center justify-between gap-3">
+        <h3 className="text-xs font-semibold tracking-wider text-muted-foreground uppercase">{titulo}</h3>
+        {acao}
+      </div>
       <ul className="space-y-2">{children}</ul>
     </section>
   );
